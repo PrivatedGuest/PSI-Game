@@ -1,0 +1,2 @@
+#Numero de xogadores
+players=15
