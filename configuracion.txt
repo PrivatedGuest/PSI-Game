@@ -1,2 +1,4 @@
 #Numero de xogadores
-players=15
+players=12
+#NUmero de partidas
+games=10

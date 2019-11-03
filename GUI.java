@@ -53,6 +53,11 @@ class GUI extends JFrame implements ActionListener, Runnable
         oMI.addActionListener (this);
         oMenu.add(oMI);
         oMenu.add(new MenuItem("-"));
+
+        oMI = new MenuItem ("Continue", new MenuShortcut('C'));     // Shortcuts are hot keys for executing actions
+        oMI.addActionListener (this);
+        oMenu.add(oMI);
+        oMenu.add(new MenuItem("-"));
          
         oMI = new MenuItem ("Exit", new MenuShortcut('X'));
         oMI.addActionListener (this);
@@ -60,10 +65,15 @@ class GUI extends JFrame implements ActionListener, Runnable
         oMB.add (oMenu);                                         // Including this menu in the MenuBar
 
         oMenu = new Menu("Modify") ;
-        oMI = new MenuItem ("Nº Players", new MenuShortcut('C'));
+        oMI = new MenuItem ("Nº Players", new MenuShortcut('N'));
         oMI.addActionListener (this);
         oMenu.add(oMI);
         oMB.add (oMenu);
+
+        oMI = new MenuItem ("Nº Games", new MenuShortcut('G'));     // Shortcuts are hot keys for executing actions
+        oMI.addActionListener (this);
+        oMenu.add(oMI);
+        oMenu.add(new MenuItem("-"));
         
         oMenu = new Menu("Help");
         oMI = new MenuItem ("About");
@@ -97,13 +107,19 @@ class GUI extends JFrame implements ActionListener, Runnable
      */
     public void actionPerformed (ActionEvent evt) {
         if ("Nº Players".equals (evt.getActionCommand())){
-            oDl = new MyDialog (this.config,this, "Current Players", true, config.getplayers(),"Change Nº players");
+            oDl = new MyDialog (this.config,this, "Current Players", true, config.getplayers("players"),"Change Nº players");
+        }
+        else if ("Nº Games".equals (evt.getActionCommand())){
+            oDl = new MyDialog (this.config,this, "Current Games", true, config.getplayers("games"),"Change Nº games");
         }
         else if ("Start".equals (evt.getActionCommand()))
             vStartThread ();
 
         else if( "Stop".equals (evt.getActionCommand())){
             vStopThread ();
+        }
+        else if( "Continue".equals (evt.getActionCommand())){
+            vContinueThread ();
         }
         
         else if ("Exit".equals (evt.getActionCommand())) {
@@ -133,6 +149,15 @@ class GUI extends JFrame implements ActionListener, Runnable
         if (oProcess != null)
             bProcessExit = true;
     }
+
+    /**
+     * This method continue a thread
+     */
+    private void vContinueThread () {
+        if (oProcess != null)
+            bProcessExit = false;
+    }
+
 
 
     /**
@@ -218,12 +243,17 @@ class MyDialog extends JDialog implements ActionListener
     public void actionPerformed (ActionEvent evt) {
         if ("Change Nº players".equals (evt.getActionCommand())) {
             String sText = oJTF.getText();                     // Getting the present text from the TextField
-            this.config.setplayers(sText);
+            this.config.setplayers("players",sText);
             int iVal = Integer.parseInt (sText);               // Converting such text to several formats
             float fVal = Float.parseFloat (sText);
             double dVal = Double.parseDouble (sText);
             dispose();                                         // Closing the dialog window
+        }else if ("Change Nº games".equals (evt.getActionCommand())) {
+            String sText = oJTF.getText();                     // Getting the present text from the TextField
+            this.config.setplayers("games",sText);
+
         }
+        
 
         else if ("Cancel".equals (evt.getActionCommand()))
             dispose();

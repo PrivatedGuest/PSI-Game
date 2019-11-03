@@ -9,7 +9,7 @@ public class configuracion{
     FileWriter fw = null;
     BufferedWriter bw = null;
 
-    public String getplayers() {
+    public String getplayers(String campo) {
         
         try {
             archivo = new File ("configuracion.txt");
@@ -20,7 +20,7 @@ public class configuracion{
             String linea;
             while((linea=br.readLine())!=null){
                 if(linea.substring(0,1).equals("#"));
-                else if(linea.substring(0,linea.indexOf("=")).equals("players")) {
+                else if(linea.substring(0,linea.indexOf("=")).equals(campo)) {
                     br.close(); fr.close();
                     return (linea.substring(linea.indexOf("=")+1));
                 }
@@ -34,7 +34,7 @@ public class configuracion{
         return "Cant find the number os players";
     }
 
-    public void setplayers(String numero){
+    public void setplayers(String campo,String valor){
         
         ArrayList<String> aux = new ArrayList<String>();
 
@@ -47,8 +47,8 @@ public class configuracion{
             while((linea=br.readLine())!=null){
                 
                 if(linea.substring(0,1).equals("#"))aux.add(linea);//we need that not to try to find "=" in a comment
-                else if(linea.substring(0,linea.indexOf("=")).equals("players")) {
-                    aux.add(linea.substring(0,linea.indexOf("=")+1) + numero);
+                else if(linea.substring(0,linea.indexOf("=")).equals(campo)) {
+                    aux.add(linea.substring(0,linea.indexOf("=")+1) + valor);
                 }else{
                     aux.add(linea);
                 }
