@@ -24,6 +24,7 @@ class GUI extends JFrame implements ActionListener, Runnable
     final String autors = "Skeleton:Juan C. Burguillo Rial\nChanges:Lionel Salgado Rigueira";
 
     private boolean bProcessExit = false;
+    private boolean bProcessWait = false;
     private Thread oProcess; // Object to manage the thread
     private MyDialog oDl;
     private configuracion config;
@@ -42,9 +43,36 @@ class GUI extends JFrame implements ActionListener, Runnable
         setForeground (Color.red);
 
         MenuBar oMB = new MenuBar();                             // The menu bar
-        Menu oMenu = new Menu("Main");                           // A Menu in the menu bar
         MenuItem oMI;                                       // Including the MenuItem in this menu
-        oMI = new MenuItem ("Start", new MenuShortcut('O'));     // Shortcuts are hot keys for executing actions
+
+
+        Menu oMenu = new Menu("Edit");                           // A Menu in the menu bar
+        oMI = new MenuItem ("Reset players", new MenuShortcut('R'));     // Shortcuts are hot keys for executing actions
+        oMI.addActionListener (this);
+        oMenu.add(oMI);
+        oMenu.add(new MenuItem("-"));                       // Including the MenuItem in this menu
+
+        oMI = new MenuItem ("Remove player", new MenuShortcut('B'));     // Shortcuts are hot keys for executing actions
+        oMI.addActionListener (this);
+        oMenu.add(oMI);
+        oMenu.add(new MenuItem("-"));
+
+        oMB.add(oMenu);
+
+        oMenu = new Menu("Window");
+        //EEEEEEEEEEEEEEEEEEEEEEEE
+        //EEEEEEEEEEEEEEEEEEEEEEEE
+        //EEEEEEEEEEEEEEEEEEEEEEEE
+        //EEEEEEEEEEEEEEEEEEEEEEEE
+        //EEEEEEEEEEEEEEEEEEEEEEEE
+        //EEEEEEEEEEEEEEEEEEEEEEEE
+        //EEEEEEEEEEEEEEEEEEEEEEEE
+        //EEEEEEEEEEEEEEEEEEEEEEEE
+        //Hai que facer un verbose, non sei como vai o de reset players pero pa remove podemos refacer a interfaz
+        //P.D: Acabar a interfaz poñendo xogadores
+
+        oMenu = new Menu("Run");                           // A Menu in the menu bar                                      // Including the MenuItem in this menu
+        oMI = new MenuItem ("New", new MenuShortcut('E'));     // Shortcuts are hot keys for executing actions
         oMI.addActionListener (this);
         oMenu.add(oMI);
         oMenu.add(new MenuItem("-"));
@@ -58,22 +86,24 @@ class GUI extends JFrame implements ActionListener, Runnable
         oMI.addActionListener (this);
         oMenu.add(oMI);
         oMenu.add(new MenuItem("-"));
+
+        oMI = new MenuItem ("Number of games", new MenuShortcut('N'));     // Shortcuts are hot keys for executing actions
+        oMI.addActionListener (this);
+        oMenu.add(oMI);
+        oMenu.add(new MenuItem("-"));
+
+        oMI = new MenuItem ("Change Nº Players", new MenuShortcut('G'));     // Shortcuts are hot keys for executing actions
+        oMI.addActionListener (this);
+        oMenu.add(oMI);
+        oMenu.add(new MenuItem("-"));
          
         oMI = new MenuItem ("Exit", new MenuShortcut('X'));
         oMI.addActionListener (this);
         oMenu.add(oMI);
+        
         oMB.add (oMenu);                                         // Including this menu in the MenuBar
 
-        oMenu = new Menu("Modify") ;
-        oMI = new MenuItem ("Nº Players", new MenuShortcut('N'));
-        oMI.addActionListener (this);
-        oMenu.add(oMI);
-        oMB.add (oMenu);
-
-        oMI = new MenuItem ("Nº Games", new MenuShortcut('G'));     // Shortcuts are hot keys for executing actions
-        oMI.addActionListener (this);
-        oMenu.add(oMI);
-        oMenu.add(new MenuItem("-"));
+        
         
         oMenu = new Menu("Help");
         oMI = new MenuItem ("About");
@@ -92,9 +122,17 @@ class GUI extends JFrame implements ActionListener, Runnable
 
         setMenuBar(oMB);
 
-        setLayout(new GridLayout(1,1));
-        add (new Label ("This is a label !!!", Label.CENTER));
-
+        int ngames = Integer.parseInt(config.get("games"));
+        int nplayers = Integer.parseInt(config.get("players"));
+        setLayout(new GridLayout(ngames+1,nplayers+1));
+        int i = 0;
+        for(i=0;i<nplayers;i++){
+            int k=0;
+            for(k=0;k<ngames;k++){
+                add(new Label ("Xogada "+i, Label.CENTER));
+            }
+        }
+        
         setSize (new Dimension(750,500));     // Window size
         setLocation (new Point (locatex, locatey));   // Window position in the screen
         setVisible (true);                    // Let's make the GUI appear in the screen
@@ -106,13 +144,13 @@ class GUI extends JFrame implements ActionListener, Runnable
      * @param evt In this parameter we receive the event that has been generated.
      */
     public void actionPerformed (ActionEvent evt) {
-        if ("Nº Players".equals (evt.getActionCommand())){
-            oDl = new MyDialog (this.config,this, "Current Players", true, config.getplayers("players"),"Change Nº players");
+        if ("Change Nº Players".equals (evt.getActionCommand())){
+            oDl = new MyDialog (this.config,this, "Current Players", true, config.get("players"),"Change Nº players");
         }
-        else if ("Nº Games".equals (evt.getActionCommand())){
-            oDl = new MyDialog (this.config,this, "Current Games", true, config.getplayers("games"),"Change Nº games");
+        else if ("Number of games".equals (evt.getActionCommand())){
+            oDl = new MyDialog (this.config,this, "Current Games", true, config.get("games"),"Change Nº games");
         }
-        else if ("Start".equals (evt.getActionCommand()))
+        else if ("New".equals (evt.getActionCommand()))
             vStartThread ();
 
         else if( "Stop".equals (evt.getActionCommand())){
@@ -123,12 +161,11 @@ class GUI extends JFrame implements ActionListener, Runnable
         }
         
         else if ("Exit".equals (evt.getActionCommand())) {
+            bProcessExit = true;
             dispose();        
             System.exit(0);
         }
     }
-
-
 
     /*
      * This method starts a thread
@@ -141,24 +178,23 @@ class GUI extends JFrame implements ActionListener, Runnable
         }
     }
 
-
     /**
      * This method stops a thread
      */
     private void vStopThread () {
         if (oProcess != null)
-            bProcessExit = true;
+        bProcessWait = true;
     }
 
     /**
      * This method continue a thread
      */
     private void vContinueThread () {
-        if (oProcess != null)
-            bProcessExit = false;
+        if (oProcess != null){
+            bProcessWait = false;
+        }
+            
     }
-
-
 
     /**
      * This method contains the code to be executed in parallel.
@@ -171,14 +207,16 @@ class GUI extends JFrame implements ActionListener, Runnable
                 i++;
                 System.out.println("Working iteration: " + i);
                 Thread.sleep(1000);
+                while(bProcessWait == true){
+                    System.out.println("Sistema Pausado");
+                    Thread.sleep(3000);
+                };
             }
             catch (InterruptedException oIE) {}
-
+            
             if (bProcessExit) return;
         }
     }
-
-
 
     public static void main (String args[]) {
         GUI oGUI= new GUI();
@@ -243,14 +281,14 @@ class MyDialog extends JDialog implements ActionListener
     public void actionPerformed (ActionEvent evt) {
         if ("Change Nº players".equals (evt.getActionCommand())) {
             String sText = oJTF.getText();                     // Getting the present text from the TextField
-            this.config.setplayers("players",sText);
+            this.config.set("players",sText);
             int iVal = Integer.parseInt (sText);               // Converting such text to several formats
             float fVal = Float.parseFloat (sText);
             double dVal = Double.parseDouble (sText);
             dispose();                                         // Closing the dialog window
         }else if ("Change Nº games".equals (evt.getActionCommand())) {
             String sText = oJTF.getText();                     // Getting the present text from the TextField
-            this.config.setplayers("games",sText);
+            this.config.set("games",sText);
 
         }
         

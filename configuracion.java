@@ -9,7 +9,7 @@ public class configuracion{
     FileWriter fw = null;
     BufferedWriter bw = null;
 
-    public String getplayers(String campo) {
+    public String get(String campo) {
         
         try {
             archivo = new File ("configuracion.txt");
@@ -34,7 +34,7 @@ public class configuracion{
         return "Cant find the number os players";
     }
 
-    public void setplayers(String campo,String valor){
+    public void set(String campo,String valor){
         
         ArrayList<String> aux = new ArrayList<String>();
 
