@@ -1,5 +1,10 @@
 import java.awt.*;
 import java.awt.event.*;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
+
+import javax.security.auth.Refreshable;
 import javax.swing.*;
 
 
@@ -10,7 +15,7 @@ import javax.swing.*;
  * @version 1.0
  */
 
-
+//System.setout
 
 /**
  * This class creates a graphical user interface with menus, dialogs and labels.
@@ -18,6 +23,18 @@ import javax.swing.*;
  * @author  Juan C. Burguillo Rial
  * @version 1.0
  */
+
+class GuiOutputStream extends OutputStream{
+    JTextArea cli;
+    public GuiOutputStream(JTextArea cli){
+        this.cli = cli;
+    }
+    @Override
+    public void write(int data)throws IOException{
+        cli.append(new String(new byte[]{(byte) data}));
+    }
+}
+
 class GUI extends JFrame implements ActionListener, Runnable
 {
 
@@ -25,11 +42,20 @@ class GUI extends JFrame implements ActionListener, Runnable
 
     private boolean bProcessExit = false;
     private boolean bProcessWait = false;
+    private boolean bProcessReboot = false;
     private Thread oProcess; // Object to manage the thread
     private MyDialog oDl;
     private configuracion config;
     private int locatex = 650;
     private int locatey = 250;
+    private int alto;
+    private int ancho;
+    private int totalpartidas = 0;
+    private JTextArea upleft;
+    private int nplayers;
+    private int ngames;
+    private GuiOutputStream cli;
+    private boolean verbose;
     /**
      * This is the GUI constructor.
      *
@@ -38,6 +64,10 @@ class GUI extends JFrame implements ActionListener, Runnable
         super (" GUI"); // Calling the constructor from the parent class
 
         config= new configuracion();
+
+        this.alto = Integer.parseInt(config.get("window_height"));
+        this.ancho = Integer.parseInt(config.get("window_width"));
+        this.verbose = Boolean.parseBoolean(config.get("verbose"));
 
         setBackground (Color.blue);
         setForeground (Color.red);
@@ -60,16 +90,22 @@ class GUI extends JFrame implements ActionListener, Runnable
         oMB.add(oMenu);
 
         oMenu = new Menu("Window");
-        //EEEEEEEEEEEEEEEEEEEEEEEE
-        //EEEEEEEEEEEEEEEEEEEEEEEE
-        //EEEEEEEEEEEEEEEEEEEEEEEE
-        //EEEEEEEEEEEEEEEEEEEEEEEE
-        //EEEEEEEEEEEEEEEEEEEEEEEE
-        //EEEEEEEEEEEEEEEEEEEEEEEE
-        //EEEEEEEEEEEEEEEEEEEEEEEE
-        //EEEEEEEEEEEEEEEEEEEEEEEE
-        //Hai que facer un verbose, non sei como vai o de reset players pero pa remove podemos refacer a interfaz
-        //P.D: Acabar a interfaz poñendo xogadores
+        oMI = new MenuItem ("Verbose");     // Shortcuts are hot keys for executing actions
+        oMI.addActionListener (this);
+        oMenu.add(oMI);
+        oMenu.add(new MenuItem("-"));
+
+        oMI = new MenuItem ("Width");     // Shortcuts are hot keys for executing actions
+        oMI.addActionListener (this);
+        oMenu.add(oMI);
+        oMenu.add(new MenuItem("-"));
+
+        oMI = new MenuItem ("Height");     // Shortcuts are hot keys for executing actions
+        oMI.addActionListener (this);
+        oMenu.add(oMI);
+        oMenu.add(new MenuItem("-"));
+
+        oMB.add(oMenu);
 
         oMenu = new Menu("Run");                           // A Menu in the menu bar                                      // Including the MenuItem in this menu
         oMI = new MenuItem ("New", new MenuShortcut('E'));     // Shortcuts are hot keys for executing actions
@@ -122,22 +158,87 @@ class GUI extends JFrame implements ActionListener, Runnable
 
         setMenuBar(oMB);
 
-        int ngames = Integer.parseInt(config.get("games"));
-        int nplayers = Integer.parseInt(config.get("players"));
-        setLayout(new GridLayout(ngames+1,nplayers+1));
+        this.ngames = Integer.parseInt(config.get("games"));
+        this.nplayers = Integer.parseInt(config.get("players"));
+        //Creamos e inicializamos as tres posicións da pantalla principal
+        JSplitPane verticaldivision = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        verticaldivision.setDividerSize(10);
+        verticaldivision.setOneTouchExpandable(true);
+        verticaldivision.setDividerLocation( alto/2);
+        JSplitPane horizontaldivision = new JSplitPane();
+        horizontaldivision.setOrientation(JSplitPane.HORIZONTAL_SPLIT);
+        horizontaldivision.setDividerSize(10);  
+        horizontaldivision.setDividerLocation( ancho/3 );
+
+        
+        
+
+        //Creamos a tabla do xogo
+
+        JPanel oJPanel = new JPanel();
+        //GridLayout Pprincipal = new GridLayout(2,1); 
+        GridLayout Pmatrix = new GridLayout(ngames+1,nplayers+1);
+        //oJPanel.add(new Label("ola",Label.CENTER));
+        //setLayout(Pmatrix);
+        
+        int k = 0;
+        Label toappend = new Label ("Rondas ", Label.CENTER);
+        toappend.setFont(new Font("ola",11,28));
+        add(toappend);
+        //add(new Label ("Rondas ", Label.CENTER).setFont(new Font("ola","ww",18)) ) ;
+        for(k=0;k<nplayers;k++){
+            toappend = new Label ("Xogador "+k, Label.CENTER);
+            toappend.setFont(new Font("ola",11,28));
+            add(toappend );
+        }
         int i = 0;
-        for(i=0;i<nplayers;i++){
-            int k=0;
-            for(k=0;k<ngames;k++){
-                add(new Label ("Xogada "+i, Label.CENTER));
+        String[] tojtablehead = new String[nplayers+1];
+        Object [][] tojtable= new String[ngames][nplayers+1];
+        k=0;
+        for(k=0;k<nplayers+1;k++){
+            if(k==0){
+                tojtable[0][k] = "RONDAS";
+                tojtablehead[k] = "RONDAS";
+            }
+            tojtable[0][k] = "XOGADOR "+k;
+            tojtablehead[k] = "XOGADOR "+k;
+            //add(new Label (""+i, Label.CENTER));
+        }
+        for(i=1;i<ngames;i++){
+            k=0;
+            //toappend =new Label ("Ronda "+i, Label.CENTER);
+            //toappend.setFont(new Font("ola",11,28));
+            //add(toappend);
+            tojtable[i][k] = "Ronda " + i;
+            for(k=1;k<nplayers+1;k++){
+                tojtable[i][k] = "XXX";
+                //add(new Label (""+i, Label.CENTER));
             }
         }
+        JTable GameTable = new JTable(tojtable,tojtablehead);
         
-        setSize (new Dimension(750,500));     // Window size
+
+        GameTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);   
+        GameTable.setRowHeight(ancho*2/3/(ngames+1));
+
+
+        //Creamos a pantalla da esquerda
+
+        this.upleft = new JTextArea("\nPlayersParticipating:"+nplayers+"\n\nThere is no parameter values at the moment\n\nGames Played:"+totalpartidas+"\n\nNo stadistic players and the moment");
+        this.upleft.setFont(new Font("def",2,20));
+
+        horizontaldivision.setLeftComponent(upleft);
+        horizontaldivision.setRightComponent(GameTable);
+        verticaldivision.setTopComponent(horizontaldivision);
+        JTextArea cliprueba = new JTextArea();
+        cli = new GuiOutputStream(cliprueba);
+        verticaldivision.setBottomComponent(new JScrollPane(cliprueba));
+        System.setOut(new PrintStream(cli,true));
+        getContentPane().add(verticaldivision, java.awt.BorderLayout.CENTER);
+        setSize (new Dimension(alto,ancho));     // Window size
         setLocation (new Point (locatex, locatey));   // Window position in the screen
         setVisible (true);                    // Let's make the GUI appear in the screen
     }
-
     /**
      * This method recibes and process events related with this class.
      *
@@ -145,10 +246,10 @@ class GUI extends JFrame implements ActionListener, Runnable
      */
     public void actionPerformed (ActionEvent evt) {
         if ("Change Nº Players".equals (evt.getActionCommand())){
-            oDl = new MyDialog (this.config,this, "Current Players", true, config.get("players"),"Change Nº players");
+            oDl = new MyDialog (this.config,this, "Current Players", true, config.get("players"),"Change Nº players","Cancel");
         }
         else if ("Number of games".equals (evt.getActionCommand())){
-            oDl = new MyDialog (this.config,this, "Current Games", true, config.get("games"),"Change Nº games");
+            oDl = new MyDialog (this.config,this, "Current Games", true, config.get("games"),"Change Nº games","Cancel");
         }
         else if ("New".equals (evt.getActionCommand()))
             vStartThread ();
@@ -158,6 +259,12 @@ class GUI extends JFrame implements ActionListener, Runnable
         }
         else if( "Continue".equals (evt.getActionCommand())){
             vContinueThread ();
+        }else if ("Verbose".equals(evt.getActionCommand())){
+            oDl= new MyDialog (this.config,this, "Verbose", true, "Activade/Desactivate","Activate Verbose","Desactivate Verbose");
+        }else if ("Width".equals(evt.getActionCommand())){
+            oDl = new MyDialog (this.config,this, "Current Width", true, config.get("window_width"),"Change Width","Cancel");
+        }else if ("Height".equals(evt.getActionCommand())){
+            oDl = new MyDialog (this.config,this, "Current Height", true, config.get("window_height"),"Change Height","Cancel");
         }
         
         else if ("Exit".equals (evt.getActionCommand())) {
@@ -171,6 +278,8 @@ class GUI extends JFrame implements ActionListener, Runnable
      * This method starts a thread
      */
     private void vStartThread () {
+        bProcessReboot = true;
+        bProcessWait = false;
         if (oProcess == null) {
             oProcess = new Thread (this);
             oProcess.start();
@@ -192,8 +301,7 @@ class GUI extends JFrame implements ActionListener, Runnable
     private void vContinueThread () {
         if (oProcess != null){
             bProcessWait = false;
-        }
-            
+        }       
     }
 
     /**
@@ -202,14 +310,31 @@ class GUI extends JFrame implements ActionListener, Runnable
     public void run() {
         int i=0;
         while (true) {
-
+            upleft.setText("\nPlayersParticipating:"+this.nplayers+"\n\nThere is no parameter values at the moment\n\nGames Played:"+this.totalpartidas+"\n\nNo stadistic players and the moment");
+        
             try {
                 i++;
-                System.out.println("Working iteration: " + i);
+                if(verbose){
+                    System.out.println("Working iteration: " + i);
+                }
+                if(i == ngames)bProcessWait=true;
                 Thread.sleep(1000);
+                if(bProcessReboot){
+                    i=0;
+                    this.totalpartidas +=1;
+                    bProcessReboot = false;
+                    bProcessWait = false;
+                }
                 while(bProcessWait == true){
-                    System.out.println("Sistema Pausado");
-                    Thread.sleep(3000);
+                    if(verbose){
+                        System.out.println("Sistema Pausado");
+                    }
+                    
+                    Thread.sleep(2000);
+                    if(i== ngames && bProcessReboot == false){
+                        System.out.println("Necesita iniciar una nueva partida");
+                        bProcessWait = true;
+                    }
                 };
             }
             catch (InterruptedException oIE) {}
@@ -232,7 +357,11 @@ class GUI extends JFrame implements ActionListener, Runnable
  */
 class MyDialog extends JDialog implements ActionListener
 {
-    private JTextField oJTF;
+    /**
+	 *
+	 */
+	private static final long serialVersionUID = 1L;
+	private JTextField oJTF;
     private int locatex = 650;
     private int locatey = 250;
     configuracion config;
@@ -244,7 +373,7 @@ class MyDialog extends JDialog implements ActionListener
      * @param sDialogName Name of this dialog window
      * @param bBool Indicates if this is a modal window (true) or not.
      */
-    MyDialog (configuracion config,Frame oParent, String sDialogName, boolean bBool, String TextField, String ButtonField) {
+    MyDialog (configuracion config,Frame oParent, String sDialogName, boolean bBool, String TextField, String ButtonField,String SecondButtonField) {
         super (oParent, sDialogName, bBool);
 
         this.config =config;
@@ -261,7 +390,7 @@ class MyDialog extends JDialog implements ActionListener
         JButton oJBut = new JButton (ButtonField);
         oJBut.addActionListener (this);
         oJPanel.add (oJBut);
-        oJBut  = new JButton ("Cancel");
+        oJBut  = new JButton (SecondButtonField);
         oJBut.addActionListener (this);
         oJPanel.add (oJBut);
         add (oJPanel);
@@ -290,9 +419,17 @@ class MyDialog extends JDialog implements ActionListener
             String sText = oJTF.getText();                     // Getting the present text from the TextField
             this.config.set("games",sText);
 
+        }else if("Change Width".equals(evt.getActionCommand())){
+            String sText = oJTF.getText();                     // Getting the present text from the TextField
+            this.config.set("window_width",sText);
+        }else if("Change Height".equals(evt.getActionCommand())){
+            String sText = oJTF.getText();                     // Getting the present text from the TextField
+            this.config.set("window_height",sText);
+        }else if("Activate Verbose".equals(evt.getActionCommand())){
+            this.config.set("verbose","true");   
+        }else if("Deactivate Verbose".equals(evt.getActionCommand())){
+            this.config.set("verbose","false");   
         }
-        
-
         else if ("Cancel".equals (evt.getActionCommand()))
             dispose();
     }
