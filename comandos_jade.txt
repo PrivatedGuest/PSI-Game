@@ -1,0 +1,2 @@
+javac -cp jadepath *.java
+java -cp javapath -nomtp -gui -agents Principal:MainAgent gui:GUI player1:RandomAgent
