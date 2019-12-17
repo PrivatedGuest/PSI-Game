@@ -55,7 +55,26 @@ public class RandomAgent extends Agent {
         Random random = new Random(1000);
         @Override
         public void action() {
-            System.out.println(getAID().getName() + ":" + state.name());
+            
+            while(true){
+                try{
+                    ACLMessage mensaxe = receive();
+                    while(mensaxe==null){
+                        Thread.sleep(1000);
+                        System.out.println("ESTO NON CHEGA");
+                        mensaxe = receive();
+                    }
+                    System.out.println(mensaxe.getContent());
+               }catch(Exception e){
+                   e.printStackTrace();
+               }
+            }
+        }
+            
+            
+            
+            
+            /*System.out.println(getAID().getName() + ":" + state.name());
             msg = blockingReceive();
             if (msg != null) {
                 System.out.println(getAID().getName() + " received " + msg.getContent() + " from " + msg.getSender().getName()); //DELETEME
@@ -107,7 +126,7 @@ public class RandomAgent extends Agent {
                         //If INFORM CHANGED stay at state 2
                         //If INFORM ENDGAME go to state 1
                         //Else error
-                        if (msg.getPerformative() == ACLMessage.REQUEST /*&& msg.getContent().startsWith("Position")*/) {
+                        if (msg.getPerformative() == ACLMessage.REQUEST /*&& msg.getContent().startsWith("Position")) {
                             ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
                             msg.addReceiver(mainAgent);
                             msg.setContent("Position#" + random.nextInt(S));
@@ -134,7 +153,7 @@ public class RandomAgent extends Agent {
                         break;
                 }
             }
-        }
+        }*/
 
         /**
          * Validates and extracts the parameters from the setup message

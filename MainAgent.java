@@ -1,4 +1,3 @@
-
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.SimpleBehaviour;
@@ -14,20 +13,32 @@ import java.util.ArrayList;
 public class MainAgent extends Agent {
 
     private GUI gui;
-    private AID[] playerAgents;
+    private ArrayList<AID> playerAgents = new ArrayList<AID>();
+    private ArrayList<String> playerNames = new ArrayList<String>();
     private GameParametersStruct parameters = new GameParametersStruct();
 
     @Override
     protected void setup() {
         gui = new GUI(this);
-        System.setOut(new PrintStream(gui.getLoggingOutputStream()));
+        updatePlayers();    
+        gui.print("Agent " + getAID().getName() + " is ready.");
+    }
 
-        updatePlayers();
-        gui.logLine("Agent " + getAID().getName() + " is ready.");
+
+    public void mandarmensage(String mensaxe){
+
+        ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+        msg.addReceiver(new AID("Player1", AID.ISLOCALNAME));
+        msg.setLanguage("English");
+        msg.setOntology("Weather-forecast-ontology");
+        msg.setContent(mensaxe);
+        send(msg);
+        System.out.println("MENSAXE ENVIADO");
+
     }
 
     public int updatePlayers() {
-        gui.logLine("Updating player list");
+        gui.print("Updating player list");
         DFAgentDescription template = new DFAgentDescription();
         ServiceDescription sd = new ServiceDescription();
         sd.setType("Player");
@@ -35,21 +46,22 @@ public class MainAgent extends Agent {
         try {
             DFAgentDescription[] result = DFService.search(this, template);
             if (result.length > 0) {
-                gui.logLine("Found " + result.length + " players");
+
+                System.out.println("Found " + result.length + " players");
             }
-            playerAgents = new AID[result.length];
             for (int i = 0; i < result.length; ++i) {
-                playerAgents[i] = result[i].getName();
+                playerAgents.add(result[i].getName());
             }
         } catch (FIPAException fe) {
-            gui.logLine(fe.getMessage());
+            System.out.println(fe.getMessage());
         }
         //Provisional
-        String[] playerNames = new String[playerAgents.length];
-        for (int i = 0; i < playerAgents.length; i++) {
-            playerNames[i] = playerAgents[i].getName();
+        for (AID aid : playerAgents) {
+            playerNames.add(aid.getLocalName());
         }
-        gui.setPlayersUI(playerNames);
+
+        gui.setupplayers(playerAgents);
+
         return 0;
     }
 
@@ -103,9 +115,9 @@ public class MainAgent extends Agent {
             msg.addReceiver(player1.aid);
             send(msg);
 
-            gui.logLine("Main Waiting for movement");
+            gui.print("Main Waiting for movement");
             ACLMessage move1 = blockingReceive();
-            gui.logLine("Main Received " + move1.getContent() + " from " + move1.getSender().getName());
+            gui.print("Main Received " + move1.getContent() + " from " + move1.getSender().getName());
             pos1 = Integer.parseInt(move1.getContent().split("#")[1]);
 
             msg = new ACLMessage(ACLMessage.REQUEST);
@@ -113,9 +125,9 @@ public class MainAgent extends Agent {
             msg.addReceiver(player2.aid);
             send(msg);
 
-            gui.logLine("Main Waiting for movement");
+            gui.print("Main Waiting for movement");
             ACLMessage move2 = blockingReceive();
-            gui.logLine("Main Received " + move1.getContent() + " from " + move1.getSender().getName());
+            gui.print("Main Received " + move1.getContent() + " from " + move1.getSender().getName());
             pos2 = Integer.parseInt(move1.getContent().split("#")[1]);
 
             msg = new ACLMessage(ACLMessage.INFORM);
