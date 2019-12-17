@@ -59,12 +59,27 @@ public class RandomAgent extends Agent {
             while(true){
                 try{
                     ACLMessage mensaxe = receive();
-                    while(mensaxe==null){
-                        Thread.sleep(1000);
-                        System.out.println("ESTO NON CHEGA");
-                        mensaxe = receive();
+                    if(mensaxe!=null){
+                        switch(mensaxe.getOntology()){
+
+                            case "NewGame":
+                                System.out.println("oky");
+                                break;
+                            case "NewRound":
+                                /*ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+                                msg.addReceiver(new AID("Player1", AID.ISLOCALNAME));
+                                msg.setLanguage("English");
+                                msg.setOntology("New Game");
+                                msg.setContent(mensaxe);
+                                send(msg);
+                                */
+                                System.out.println("NEW ROUND");
+                                break;
+                        }
+                    }else{
+                        block();
                     }
-                    System.out.println(mensaxe.getContent());
+                
                }catch(Exception e){
                    e.printStackTrace();
                }

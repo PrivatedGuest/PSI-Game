@@ -23,14 +23,16 @@ public class MainAgent extends Agent {
         updatePlayers();    
         gui.print("Agent " + getAID().getName() + " is ready.");
     }
-
-
+    
     public void mandarmensage(String mensaxe){
-
+    
         ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-        msg.addReceiver(new AID("Player1", AID.ISLOCALNAME));
+        for(int k=0;k<playerAgents.size();k++){
+            msg.addReceiver(new AID(this.playerAgents.get(k).getLocalName(), AID.ISLOCALNAME));
+        }
+        
         msg.setLanguage("English");
-        msg.setOntology("Weather-forecast-ontology");
+        msg.setOntology("NewGame");
         msg.setContent(mensaxe);
         send(msg);
         System.out.println("MENSAXE ENVIADO");
@@ -95,48 +97,16 @@ public class MainAgent extends Agent {
             //Organize the matches
             for (int i = 0; i < players.size(); i++) {
                 for (int j = i + 1; j < players.size(); j++) { //too lazy to think, let's see if it works or it breaks
-                    playGame(players.get(i), players.get(j));
+                    playGame();
                 }
             }
         }
 
-        private void playGame(PlayerInformation player1, PlayerInformation player2) {
+        private void playGame() {
             //Assuming player1.id < player2.id
-            ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-            msg.addReceiver(player1.aid);
-            msg.addReceiver(player2.aid);
-            msg.setContent("NewGame#" + player1.id + "," + player2.id);
-            send(msg);
+            
 
-            int pos1, pos2;
 
-            msg = new ACLMessage(ACLMessage.REQUEST);
-            msg.setContent("Position");
-            msg.addReceiver(player1.aid);
-            send(msg);
-
-            gui.print("Main Waiting for movement");
-            ACLMessage move1 = blockingReceive();
-            gui.print("Main Received " + move1.getContent() + " from " + move1.getSender().getName());
-            pos1 = Integer.parseInt(move1.getContent().split("#")[1]);
-
-            msg = new ACLMessage(ACLMessage.REQUEST);
-            msg.setContent("Position");
-            msg.addReceiver(player2.aid);
-            send(msg);
-
-            gui.print("Main Waiting for movement");
-            ACLMessage move2 = blockingReceive();
-            gui.print("Main Received " + move1.getContent() + " from " + move1.getSender().getName());
-            pos2 = Integer.parseInt(move1.getContent().split("#")[1]);
-
-            msg = new ACLMessage(ACLMessage.INFORM);
-            msg.addReceiver(player1.aid);
-            msg.addReceiver(player2.aid);
-            msg.setContent("Results#1#1");
-            send(msg);
-            msg.setContent("EndGame");
-            send(msg);
         }
 
         @Override
