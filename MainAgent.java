@@ -6,7 +6,7 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
-
+ 
 import java.io.PrintStream;
 import java.util.ArrayList;
 
@@ -16,15 +16,30 @@ public class MainAgent extends Agent {
     private ArrayList<AID> playerAgents = new ArrayList<AID>();
     private ArrayList<String> playerNames = new ArrayList<String>();
     private GameParametersStruct parameters = new GameParametersStruct();
+    private boolean verbose;
+
+
+    public ArrayList<AID> getPlayerAgents(){
+
+        return playerAgents;
+    }
 
     @Override
     protected void setup() {
         gui = new GUI(this);
         updatePlayers();    
-        gui.print("Agent " + getAID().getName() + " is ready.");
+        gui.print(false,"Agent " + getAID().getName() + " is ready.");
     }
     
-    public void mandarmensage(String mensaxe){
+    public GUI getGui(){
+        return this.gui;
+    }
+
+    public void setVerbose(boolean x){
+        this.verbose = x;
+    }
+
+    public void play(){
     
         ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
         for(int k=0;k<playerAgents.size();k++){
@@ -32,15 +47,13 @@ public class MainAgent extends Agent {
         }
         
         msg.setLanguage("English");
-        msg.setOntology("NewGame");
-        msg.setContent(mensaxe);
+        msg.setOntology("Play");
+        msg.setContent("XOGA OSTIA");
         send(msg);
-        System.out.println("MENSAXE ENVIADO");
-
     }
 
     public int updatePlayers() {
-        gui.print("Updating player list");
+        gui.print(false,"Updating player list");
         DFAgentDescription template = new DFAgentDescription();
         ServiceDescription sd = new ServiceDescription();
         sd.setType("Player");
@@ -48,7 +61,6 @@ public class MainAgent extends Agent {
         try {
             DFAgentDescription[] result = DFService.search(this, template);
             if (result.length > 0) {
-
                 System.out.println("Found " + result.length + " players");
             }
             for (int i = 0; i < result.length; ++i) {
@@ -57,18 +69,27 @@ public class MainAgent extends Agent {
         } catch (FIPAException fe) {
             System.out.println(fe.getMessage());
         }
-        //Provisional
+        
+        ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+        int contador =0;
         for (AID aid : playerAgents) {
             playerNames.add(aid.getLocalName());
-        }
-
+            ACLMessage msge = new ACLMessage(ACLMessage.INFORM);
+            msge.addReceiver(aid);
+            msge.setOntology("StartUp");
+            msge.setContent("Id#"+contador+"#"+playerAgents.size()+",40,10,0.8,4");
+            send(msge);
+            contador++;
+        }    
+        
         gui.setupplayers(playerAgents);
 
+        newGame();
         return 0;
     }
 
     public int newGame() {
-        addBehaviour(new GameManager());
+        addBehaviour(new GameManager(this));
         return 0;
     }
 
@@ -78,35 +99,67 @@ public class MainAgent extends Agent {
      */
     private class GameManager extends SimpleBehaviour {
 
-        @Override
-        public void action() {
-            //Assign the IDs
-            ArrayList<PlayerInformation> players = new ArrayList<>();
-            int lastId = 0;
-            for (AID a : playerAgents) {
-                players.add(new PlayerInformation(a, lastId++));
-            }
+        private MainAgent agent;
+        private int nrondas=1;
+        private int xogarcontodos=0;
 
-            //Initialize (inform ID)
-            for (PlayerInformation player : players) {
-                ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-                msg.setContent("Id#" + player.id + "#" + parameters.N + "," + parameters.S + "," + parameters.R + "," + parameters.I + "," + parameters.P);
-                msg.addReceiver(player.aid);
-                send(msg);
-            }
-            //Organize the matches
-            for (int i = 0; i < players.size(); i++) {
-                for (int j = i + 1; j < players.size(); j++) { //too lazy to think, let's see if it works or it breaks
-                    playGame();
-                }
-            }
+        public int getnrondas(){
+            return this.nrondas;
         }
 
-        private void playGame() {
-            //Assuming player1.id < player2.id
-            
+        public int getXogarConTodos(){
+            return this.xogarcontodos;
+        }
 
+        public void setXogarConTodos(int x){
+            this.xogarcontodos = x;
+        }
 
+        public void setnrondas(int X){
+            this.nrondas = X;
+        }
+        
+        public GameManager(MainAgent agent){
+            this.agent = agent;
+        }
+
+        public MainAgent getAgent(){
+            return this.agent;
+        }
+        @Override
+        public void action() {
+
+            while(true){
+                ACLMessage msg = myAgent.receive();
+                if(msg!=null){
+                    switch(msg.getOntology()){
+
+                        case "Resultado":
+                            
+                            System.out.println("Xogador "+msg.getSender().getLocalName()+" na ronda "+this.getnrondas());
+
+                            this.getAgent().getGui().agentResponse(msg.getContent(),
+                                                                    msg.getSender().getLocalName(),
+                                                                    this.getnrondas());
+                            
+                            if(this.getXogarConTodos()==this.getAgent().getPlayerAgents().size() ){
+                                this.setXogarConTodos(0);
+                                this.setnrondas(this.getnrondas()+1);
+                            }else{
+                                this.setXogarConTodos(this.getXogarConTodos()+1);
+                            }
+                            break;
+                        case "Verbose":
+                            this.getAgent().getGui().print(true,"OLAA DENDE O CASE VERBOSE");
+                            break;
+                        default:
+                            this.getAgent().getGui().print(false,"Agente incompatible con interfaz");
+                    }
+                }else{
+                    
+                    block();
+                }
+            }
         }
 
         @Override

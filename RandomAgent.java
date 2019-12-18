@@ -11,15 +11,12 @@ import java.util.Random;
 
 public class RandomAgent extends Agent {
 
-    private State state;
     private AID mainAgent;
     private int myId, opponentId;
     private int N, S, R, I, P;
     private ACLMessage msg;
 
     protected void setup() {
-        state = State.s0NoConfig;
-
         //Register in the yellow pages as a player
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
@@ -47,33 +44,46 @@ public class RandomAgent extends Agent {
         System.out.println("RandomPlayer " + getAID().getName() + " terminating.");
     }
 
-    private enum State {
-        s0NoConfig, s1AwaitingGame, s2Round, s3AwaitingResult
-    }
-
     private class Play extends CyclicBehaviour {
         Random random = new Random(1000);
+        AID mainAgent;
+        int id;
+        int nplayers;
+        int endowment;
+        int roundavg;
+        float pd;
+        int numgames;
+
         @Override
         public void action() {
-            
             while(true){
                 try{
                     ACLMessage mensaxe = receive();
                     if(mensaxe!=null){
+                        this.mainAgent=mensaxe.getSender();
+                        ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+                        msg.addReceiver(this.mainAgent);
                         switch(mensaxe.getOntology()){
-
-                            case "NewGame":
-                                System.out.println("oky");
+                            case "StartUp":
+                                String aux[] = mensaxe.getContent().split("#");
+                                this.id = Integer.parseInt(aux[1]);
+                                String auxcomas[] = aux[2].split(",");
+                                this.nplayers = Integer.parseInt(auxcomas[0]);
+                                this.endowment = Integer.parseInt(auxcomas[1]);
+                                this.roundavg = Integer.parseInt(auxcomas[2]);
+                                this.pd = Float.parseFloat(auxcomas[3]);
+                                this.numgames = Integer.parseInt(auxcomas[4]);
                                 break;
-                            case "NewRound":
-                                /*ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-                                msg.addReceiver(new AID("Player1", AID.ISLOCALNAME));
-                                msg.setLanguage("English");
-                                msg.setOntology("New Game");
-                                msg.setContent(mensaxe);
+                            case "PlayAgain":                                
+                                msg.setOntology("Verbose");
+                                msg.setContent("MENSAXE DENDE O MAINAGENT");
                                 send(msg);
-                                */
-                                System.out.println("NEW ROUND");
+                                break;
+                            case "Play":
+                                System.out.println("ESTAMOS NO CASE PLAY");
+                                msg.setOntology("Resultado");
+                                msg.setContent("XX");
+                                send(msg);
                                 break;
                         }
                     }else{

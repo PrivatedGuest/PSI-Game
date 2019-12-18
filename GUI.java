@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
-
+ 
 import javax.security.auth.Refreshable;
 import javax.swing.*;
 
@@ -59,11 +59,18 @@ class GUI extends JFrame implements ActionListener, Runnable
     private int ngames;
     private GuiOutputStream cli;
     private boolean verbose;
+    private Object [][] tableUI;
+    private ArrayList<AID> playerAgents;
+
 
     /**
      * This is the GUI constructor.
      *
      */
+    public MainAgent getAgent(){
+        return this.mainAgent;
+    }
+
     public configuracion getConfig(){
         return this.config;
     }
@@ -71,14 +78,13 @@ class GUI extends JFrame implements ActionListener, Runnable
     
     GUI(MainAgent agent) {
         super ("GUI"); // Calling the constructor from the parent class
-
+        mainAgent = agent;
+        
         System.out.println("Inicializada a UI");
         setTitle("GUI");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         pack();
         setVisible(true);
-
-        mainAgent = agent;
         config= new configuracion();
 
         this.alto = Integer.parseInt(config.get("window_height"));
@@ -177,8 +183,23 @@ class GUI extends JFrame implements ActionListener, Runnable
 
     }
 
+    public void agentResponse(String resultado,String name,int nround){
+
+
+        for(int i=1;i<playerAgents.size()+1;i++){//Na primeira columna nn hai axente
+            
+            if(this.tableUI[0][i].equals(name)){
+                //System.out.println("Encontramos a-->"+name);
+                this.tableUI[nround][i]= resultado;
+            }/*else{
+                System.out.println(name);
+            }*/
+        }
+    }
+
     public JSplitPane setupplayers(ArrayList<AID> playerAgents){
 
+        this.playerAgents = playerAgents;
         JSplitPane horizontaldivision = new JSplitPane();
         horizontaldivision.setOrientation(JSplitPane.HORIZONTAL_SPLIT);
         horizontaldivision.setDividerSize(10);  
@@ -195,24 +216,25 @@ class GUI extends JFrame implements ActionListener, Runnable
             add(toappend );
         }
         int i = 0;
-        String[] tojtablehead = new String[playerAgents.size()+1];
-        Object [][] tojtable= new String[ngames][playerAgents.size()+1];
+        String[] tableUIhead = new String[playerAgents.size()+1];
+        this.tableUI= new String[ngames][playerAgents.size()+1];
+
         k=0;
         for(k=0;k<playerAgents.size()+1;k++){
             if(k==0){
-                tojtable[0][k] = "RONDAS";
-                tojtablehead[k] = "RONDAS";
+                tableUI[0][k] = "RONDAS";
+                tableUIhead[k] = "RONDAS";
             }else{
-                tojtable[0][k] = playerAgents.get(k-1).getLocalName();
-                tojtablehead[k] = playerAgents.get(k-1).getLocalName();
+                tableUI[0][k] = playerAgents.get(k-1).getLocalName();
+                tableUIhead[k] = playerAgents.get(k-1).getLocalName();
             }
         }
 
         for(i=1;i<ngames;i++){
             k=0;
-            tojtable[i][k] = "Ronda " + i;
+            tableUI[i][k] = "Ronda " + i;
             for(k=1;k<playerAgents.size()+1;k++){
-                tojtable[i][k] = " ";
+                tableUI[i][k] = " ";
             }
         }
 
@@ -222,7 +244,7 @@ class GUI extends JFrame implements ActionListener, Runnable
         verticaldivision.setDividerLocation( alto/2);
 
 
-        JTable GameTable = new JTable(tojtable,tojtablehead);
+        JTable GameTable = new JTable(tableUI,tableUIhead);
         
         GameTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);   
         GameTable.setRowHeight(ancho*2/3/(ngames+1));
@@ -277,7 +299,7 @@ class GUI extends JFrame implements ActionListener, Runnable
             vStopThread ();
         }
         else if( "Continue".equals (evt.getActionCommand())){
-            this.mainAgent.mandarmensage("OLAAAAA");
+            this.mainAgent.play();
             vContinueThread ();
         }else if ("Verbose".equals(evt.getActionCommand())){
             oDl= new MyDialog (this, "Verbose", true, "Activade/Desactivate","Activate Verbose","Desactivate Verbose");
@@ -366,8 +388,10 @@ class GUI extends JFrame implements ActionListener, Runnable
         GUI oGUI= new GUI();
     }*/
 
-    public void print(String parapintar ){
-        System.out.println(parapintar);
+    public void print(boolean esverbose,String parapintar ){
+        if(!esverbose || this.getConfig().get("verbose").equals("true")  )  {
+            System.out.println(parapintar);
+        }
     }
 
      public void setPlayersUI(ArrayList<String> players) {
@@ -391,6 +415,7 @@ class MyDialog extends JDialog implements ActionListener
     private int locatex = 650;
     private int locatey = 250;
     configuracion config;
+    MainAgent agent;
 
     /**
      * This is the MyDialog class constructor
@@ -401,8 +426,9 @@ class MyDialog extends JDialog implements ActionListener
      */
     MyDialog (GUI gui, String sDialogName, boolean bBool, String TextField, String ButtonField,String SecondButtonField) {
         super (gui, sDialogName, bBool);
-
         this.config = gui.getConfig();
+        this.agent = gui.getAgent();
+        
         setBackground (Color.red); // Colors
         setForeground (Color.blue);
 
@@ -456,9 +482,11 @@ class MyDialog extends JDialog implements ActionListener
             dispose();
         }else if("Activate Verbose".equals(evt.getActionCommand())){
             this.config.set("verbose","true");
+            this.agent.setVerbose(true);
             dispose();   
-        }else if("Deactivate Verbose".equals(evt.getActionCommand())){
+        }else if("Desactivate Verbose".equals(evt.getActionCommand())){
             this.config.set("verbose","false"); 
+            this.agent.setVerbose(false);
             dispose();  
         }
         else if ("Cancel".equals (evt.getActionCommand())){

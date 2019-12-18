@@ -2,7 +2,7 @@ import java.io.*;
 import java.util.ArrayList;
 
 public class configuracion{
-
+ 
     File archivo = null;
     FileReader fr = null;
     BufferedReader br = null;
