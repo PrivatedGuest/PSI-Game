@@ -1,10 +1,10 @@
 #Numero de xogadores
 players=8
 #NUmero de partidas
-games=15
+games=11
 #Ancho ventana
 window_width=1000
 #Alto ventana
 window_height=1000
 #Verbose on/off
-verbose=false
+verbose=true

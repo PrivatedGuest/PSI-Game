@@ -58,15 +58,25 @@ class GUI extends JFrame implements ActionListener, Runnable
     private int nplayers;
     private int ngames;
     private GuiOutputStream cli;
-    private boolean verbose;
-    private Object [][] tableUI;
+    private boolean verbose=true;
+    public Object [][] tableUI;
     private ArrayList<AID> playerAgents;
-
-
+    public JSplitPane horizontaldivision;   
+    public JSplitPane verticaldivision;
+    public int espera;
+    public JTable gameTable;
     /**
      * This is the GUI constructor.
      *
      */
+    public void setTotalPartidas(int X){
+        this.totalpartidas = X;
+    }
+
+    public int getTotalPartidas(){
+        return this.totalpartidas;
+    }
+
     public MainAgent getAgent(){
         return this.mainAgent;
     }
@@ -78,8 +88,20 @@ class GUI extends JFrame implements ActionListener, Runnable
     
     GUI(MainAgent agent) {
         super ("GUI"); // Calling the constructor from the parent class
+        this.espera=0;
         mainAgent = agent;
-        
+        this.horizontaldivision  = new JSplitPane();
+        this.horizontaldivision.setOrientation(JSplitPane.HORIZONTAL_SPLIT);
+        this.horizontaldivision.setDividerSize(10);  
+        this.horizontaldivision.setDividerLocation( ancho/3 );
+
+        this.verticaldivision = new JSplitPane(JSplitPane.VERTICAL_SPLIT); 
+        this.verticaldivision.setDividerSize(10);
+        this.verticaldivision.setOneTouchExpandable(true);
+        this.verticaldivision.setDividerLocation( alto/2);
+
+
+
         System.out.println("Inicializada a UI");
         setTitle("GUI");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -90,6 +112,8 @@ class GUI extends JFrame implements ActionListener, Runnable
         this.alto = Integer.parseInt(config.get("window_height"));
         this.ancho = Integer.parseInt(config.get("window_width"));
         this.verbose = Boolean.parseBoolean(config.get("verbose"));
+
+        
 
         setBackground (Color.blue);
         setForeground (Color.red);
@@ -180,32 +204,29 @@ class GUI extends JFrame implements ActionListener, Runnable
         this.ngames = Integer.parseInt(config.get("games"));
         this.nplayers = Integer.parseInt(config.get("players"));
         //Creamos e inicializamos as tres posicións da pantalla principal
+        this.espera = 1;
 
     }
 
     public void agentResponse(String resultado,String name,int nround){
 
-
         for(int i=1;i<playerAgents.size()+1;i++){//Na primeira columna nn hai axente
             
             if(this.tableUI[0][i].equals(name)){
-                //System.out.println("Encontramos a-->"+name);
-                this.tableUI[nround][i]= resultado;
-            }/*else{
-                System.out.println(name);
-            }*/
+                this.gameTable.setValueAt(resultado,nround,i);
+            }
         }
     }
 
-    public JSplitPane setupplayers(ArrayList<AID> playerAgents){
+    public void setupplayers(ArrayList<AID> playerAgents){
 
         this.playerAgents = playerAgents;
-        JSplitPane horizontaldivision = new JSplitPane();
-        horizontaldivision.setOrientation(JSplitPane.HORIZONTAL_SPLIT);
-        horizontaldivision.setDividerSize(10);  
-        horizontaldivision.setDividerLocation( ancho/3 );
-
         int k = 0;
+        try{
+            Thread.sleep(1000);
+        }catch(Exception e){    
+            System.out.println(e);
+        }
         Label toappend = new Label ("Rondas ", Label.CENTER);
         toappend.setFont(new Font("ola",11,28));
         add(toappend);
@@ -238,40 +259,33 @@ class GUI extends JFrame implements ActionListener, Runnable
             }
         }
 
-        JSplitPane verticaldivision = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        verticaldivision.setDividerSize(10);
-        verticaldivision.setOneTouchExpandable(true);
-        verticaldivision.setDividerLocation( alto/2);
+        this.gameTable = new JTable(tableUI,tableUIhead);
+        this.gameTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);   
+        this.gameTable.setRowHeight(ancho*2/3/(ngames+1));
 
-
-        JTable GameTable = new JTable(tableUI,tableUIhead);
-        
-        GameTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);   
-        GameTable.setRowHeight(ancho*2/3/(ngames+1));
-
-        JScrollPane scrollgame = new JScrollPane (GameTable,
+        JScrollPane scrollgame = new JScrollPane (this.gameTable,
             JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
         //Creamos a pantalla da esquerda
 
-        this.upleft = new JTextArea("\nPlayersParticipating:"+nplayers+"\n\nThere is no parameter values at the moment\n\nGames Played:"+totalpartidas+"\n\nNo stadistic players and the moment");
+        this.upleft = new JTextArea("\nPlayersParticipating:"+this.nplayers+"\n\nThere is no parameter values at the moment\n\nIn game number:"+totalpartidas+"\n\nNo stadistic players and the moment");
         this.upleft.setFont(new Font("def",2,20));
 
-        horizontaldivision.setLeftComponent(upleft);
-        horizontaldivision.setRightComponent(scrollgame);
+        this.horizontaldivision.setLeftComponent(upleft);
+        this.horizontaldivision.setRightComponent(scrollgame);
 
 
-        verticaldivision.setTopComponent(horizontaldivision);
+        this.verticaldivision.setTopComponent(this.horizontaldivision);
 
         JTextArea cliprueba = new JTextArea();
         cli = new GuiOutputStream(cliprueba);
-        verticaldivision.setBottomComponent(new JScrollPane(cliprueba));
+        this.verticaldivision.setBottomComponent(new JScrollPane(cliprueba));
         System.setOut(new PrintStream(cli,true));
-        getContentPane().add(verticaldivision, java.awt.BorderLayout.CENTER);
+        getContentPane().add(this.verticaldivision, java.awt.BorderLayout.CENTER);
         setSize (new Dimension(alto,ancho));     // Window size
         setLocation (new Point (locatex, locatey));   // Window position in the screen
         setVisible (true);                    // Let's make the GUI appear in the screen
 
-        return horizontaldivision;
+        return ;
     }
 
     /*
@@ -293,13 +307,13 @@ class GUI extends JFrame implements ActionListener, Runnable
             oDl = new MyDialog (this, "Current Games", true, config.get("games"),"Change Nº games","Cancel");
         }
         else if ("New".equals (evt.getActionCommand())){
+            this.mainAgent.startGame();
             vStartThread ();
         }
         else if( "Stop".equals (evt.getActionCommand())){
             vStopThread ();
         }
         else if( "Continue".equals (evt.getActionCommand())){
-            this.mainAgent.play();
             vContinueThread ();
         }else if ("Verbose".equals(evt.getActionCommand())){
             oDl= new MyDialog (this, "Verbose", true, "Activade/Desactivate","Activate Verbose","Desactivate Verbose");
@@ -308,11 +322,11 @@ class GUI extends JFrame implements ActionListener, Runnable
         }else if ("Height".equals(evt.getActionCommand())){
             oDl = new MyDialog (this, "Current Height", true, config.get("window_height"),"Change Height","Cancel");
         }
-        
+
         else if ("Exit".equals (evt.getActionCommand())) {
             bProcessExit = true;
-            dispose();        
             System.exit(0);
+            dispose();        
         }
     }
 
@@ -320,13 +334,14 @@ class GUI extends JFrame implements ActionListener, Runnable
      * This method starts a thread
      */
     private void vStartThread () {
+        /*
         bProcessReboot = true;
         bProcessWait = false;
         if (oProcess == null) {
             oProcess = new Thread (this);
             oProcess.start();
             bProcessExit = false;
-        }
+        }*/
     }
 
     /**
