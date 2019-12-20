@@ -7,4 +7,4 @@ window_width=1000
 #Alto ventana
 window_height=1000
 #Verbose on/off
-verbose=true
+verbose=false

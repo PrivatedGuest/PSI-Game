@@ -9,7 +9,7 @@ import jade.lang.acl.ACLMessage;
 
 import java.util.Random;
 
-public class RandomAgent extends Agent {
+public class FixedAgent extends Agent {
 
     private AID mainAgent;
     private int myId, opponentId;
@@ -24,6 +24,7 @@ public class RandomAgent extends Agent {
         sd.setType("Player");
         sd.setName("Game");
         dfd.addServices(sd);
+        
         try {
             DFService.register(this, dfd);
         } catch (FIPAException fe) {
@@ -54,6 +55,15 @@ public class RandomAgent extends Agent {
         int roundavg;
         float pd;
         int numgames;
+        int fixed;
+
+        public void setFixed(int X){
+            this.fixed = X;
+        }
+
+        public int getFixed(){
+            return this.fixed;
+        }
 
         /*public Play(RandomAgent X){
             this.agent = X;
@@ -70,6 +80,7 @@ public class RandomAgent extends Agent {
                         msg.addReceiver(this.mainAgent);
                         switch(mensaxe.getContent().substring(0,3).toLowerCase()){
                             case "id#":
+                                this.setFixed((int)Math.round((Math.random()*4)));
                                 String aux[] = mensaxe.getContent().split("#");
                                 this.id = Integer.parseInt(aux[1]);
                                 String auxcomas[] = aux[2].split(",");
@@ -80,17 +91,17 @@ public class RandomAgent extends Agent {
                                 this.numgames = Integer.parseInt(auxcomas[4]);
                                 break;
                             case "new":    
-                                /*msg.setOntology("Verbose");
+                               /* this.setFixed((int)Math.round((Math.random()*4)));
+                                msg.setOntology("Verbose");
                                 msg.setContent(getAID().getLocalName()+":\tEmpezamos un novo xogo");
                                 send(msg);
                                 msg.setOntology("Other thing");
                                 msg.setContent("startup received");
-                                send(msg);*/
+                                send(msg);*/    
                                 break;
                             case "act":
-                                int resultado =  (int)Math.round((Math.random()*4));
                                 msg.setOntology("HiAll");
-                                msg.setContent("Action#"+resultado);
+                                msg.setContent("Action#"+this.getFixed());
                                 send(msg);
                                 break;
                             case "res":

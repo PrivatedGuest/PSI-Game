@@ -64,7 +64,7 @@ public class configuracion{
                 bw.write(aux.get(i)+"\n");
                 i+=1;
             }
-        bw.close();fw.close();
+            bw.close();fw.close();
             
         }catch(Exception e){
             e.printStackTrace();

@@ -54,9 +54,11 @@ class GUI extends JFrame implements ActionListener, Runnable
     private int alto;
     private int ancho;
     private int totalpartidas = 0;
-    private JTextArea upleft;
+    private String winner = "No last round winner";
+    private JLabel upleft;
     private int nplayers;
     private int ngames;
+    private String ranking = "No ranking at the moment";
     private GuiOutputStream cli;
     private boolean verbose=true;
     public Object [][] tableUI;
@@ -69,6 +71,20 @@ class GUI extends JFrame implements ActionListener, Runnable
      * This is the GUI constructor.
      *
      */
+
+    public void setRanking(String X){
+        this.ranking = X;
+    }
+
+    public void refreshJLabel(){
+        this.upleft.setText("<html><p>PlayersParticipating:"+this.nplayers+"</p><br><p>Last is no parameter values at the moment</p><br>"+
+            "<p>In game number:"+this.totalpartidas+"</p><br><p>"+this.ranking+"</p></html>");
+    }
+
+    public void setNplayers(int X){
+        this.nplayers=X;
+    }
+
     public void setTotalPartidas(int X){
         this.totalpartidas = X;
     }
@@ -208,8 +224,19 @@ class GUI extends JFrame implements ActionListener, Runnable
 
     }
 
-    public void agentResponse(String resultado,String name,int nround){
+    public void resetplayers(){
 
+        for(int k=1;k< this.gameTable.getRowCount();k++){
+
+            for(int i=1;i< this.gameTable.getColumnCount();i++){       
+                this.gameTable.setValueAt(" ",k,i);
+            }
+        }
+    
+    }
+
+    public void agentResponse(String resultado,String name,int nround){
+    
         for(int i=1;i<playerAgents.size()+1;i++){//Na primeira columna nn hai axente
             
             if(this.tableUI[0][i].equals(name)){
@@ -220,6 +247,7 @@ class GUI extends JFrame implements ActionListener, Runnable
 
     public void setupplayers(ArrayList<AID> playerAgents){
 
+        this.setNplayers(playerAgents.size());
         this.playerAgents = playerAgents;
         int k = 0;
         try{
@@ -267,7 +295,8 @@ class GUI extends JFrame implements ActionListener, Runnable
             JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
         //Creamos a pantalla da esquerda
 
-        this.upleft = new JTextArea("\nPlayersParticipating:"+this.nplayers+"\n\nThere is no parameter values at the moment\n\nIn game number:"+totalpartidas+"\n\nNo stadistic players and the moment");
+        this.upleft = new JLabel("<html><p>PlayersParticipating:"+this.nplayers+"</p><br><p>"+this.winner+"</p><br>"+
+            "<p>In game number:"+totalpartidas+"</p><br><p>No stadistic players and the moment</p></html>");
         this.upleft.setFont(new Font("def",2,20));
 
         this.horizontaldivision.setLeftComponent(upleft);
@@ -311,9 +340,11 @@ class GUI extends JFrame implements ActionListener, Runnable
             vStartThread ();
         }
         else if( "Stop".equals (evt.getActionCommand())){
+            this.mainAgent.setCanPlay(false);
             vStopThread ();
         }
         else if( "Continue".equals (evt.getActionCommand())){
+            this.mainAgent.setCanPlay(true);
             vContinueThread ();
         }else if ("Verbose".equals(evt.getActionCommand())){
             oDl= new MyDialog (this, "Verbose", true, "Activade/Desactivate","Activate Verbose","Desactivate Verbose");
@@ -321,8 +352,10 @@ class GUI extends JFrame implements ActionListener, Runnable
             oDl = new MyDialog (this, "Current Width", true, config.get("window_width"),"Change Width","Cancel");
         }else if ("Height".equals(evt.getActionCommand())){
             oDl = new MyDialog (this, "Current Height", true, config.get("window_height"),"Change Height","Cancel");
+        }else if ("Reset players".equals(evt.getActionCommand())){
+            this.resetplayers();
+                
         }
-
         else if ("Exit".equals (evt.getActionCommand())) {
             bProcessExit = true;
             System.exit(0);

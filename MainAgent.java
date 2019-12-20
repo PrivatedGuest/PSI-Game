@@ -7,26 +7,54 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
  
-import java.io.PrintStream;
+import java.io.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.ArrayList;
 
 public class MainAgent extends Agent {
 
     private GUI gui;
     private ArrayList<AID> playerAgents = new ArrayList<AID>();
+    private ArrayList<AID> playerTot = new ArrayList<AID>();
     private ArrayList<String> playerNames = new ArrayList<String>();
     private GameParametersStruct parameters = new GameParametersStruct();
     private int currentround = 1;
+    private int currentplay = 1;
+    private int currentgeneration = 1;
     private boolean verbose;
-    private int endowment =40;
+    private int endowment = 40;
     private int nrounds = 10;
+    private int ngenerations = 50;
     private float pd = 0.8f;
-    private int nruns = 20;
-    private boolean canplay = false;
-    //1 vai ser o que xogou a ultima ronda
-    //2 vai ser os cartos desta ronda
-    //3 vai ser o numero de victorias
-    public String[][] datos; 
+    private int nruns = 100;
+    private boolean canplay = true;
+    //0 vai ser os cartos que lle quedan
+    //1 vai ser os cartos acumulados
+    public int[][] datos; 
+    public int[] ganadores;
+    private int puntosestejuego=0;
+
+    public int getngenerations(){
+        return this.ngenerations;
+    }
+
+    public int getPuntosEsteJuego(){
+        return puntosestejuego;
+    }
+
+    public void setPuntosEsteJuego(int X){
+        this.puntosestejuego = X;
+    }
+
+    public void setCurrentGeneration(int X){
+        this.currentgeneration = X;
+    }
+
+    public int getCurrentGeneration(){
+        return this.currentgeneration;
+    }
 
     public boolean getCanPlay(){
         return this.canplay;
@@ -34,6 +62,14 @@ public class MainAgent extends Agent {
 
     public void setCanPlay(boolean X){
         this.canplay = X;
+    }
+
+    public int getCurrentPlay(){
+        return this.currentplay;
+    }
+
+    public void setCurrentPlay(int X){
+        this.currentplay = X;
     }
 
     public int getnrounds(){
@@ -61,7 +97,6 @@ public class MainAgent extends Agent {
     }
 
     public ArrayList<AID> getPlayerAgents(){
-
         return playerAgents;
     }
 
@@ -81,19 +116,38 @@ public class MainAgent extends Agent {
     }
 
     public void startGame(){
+
+        while(this.canplay == false){
+            try{
+                Thread.sleep(1000);
+                System.out.println("ESPERANDO");
+            }catch(Exception e){
+                System.out.println("FALLO NO PLAYROUND DO MAIN");
+            }
+        }
+
+        this.setCurrentPlay(1);
+        this.continueGame();
+
+    }
+
+    public void continueGame(){
     
         ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
         for(int k=0;k<playerAgents.size();k++){
             msg.addReceiver(new AID(this.playerAgents.get(k).getLocalName(), AID.ISLOCALNAME));
+            datos[k][0] = this.endowment;
         }
-        
+        this.setPuntosEsteJuego(0);
         this.setCurrentRound(1);
+        this.getGui().setTotalPartidas(this.getGui().getTotalPartidas()+1);
         msg.setLanguage("English");
         msg.setOntology("Play");
         msg.setContent("NewGame");
-        this.setCanPlay(false);
         send(msg);
-        this.getGui().setTotalPartidas(this.getGui().getTotalPartidas()+1);
+        msg.setContent("Actions");
+        send(msg);
+
     }   
 
     public int updatePlayers() {
@@ -108,17 +162,18 @@ public class MainAgent extends Agent {
                 System.out.println("Found " + result.length + " players");
             }
             for (int i = 0; i < result.length; ++i) {
+                //playerTot.add(result[i].getName());
                 playerAgents.add(result[i].getName());
-
             }
-            datos = new String[playerAgents.size()][3];
+            datos = new int[playerAgents.size()][2];
+            ganadores = new int [playerAgents.size()];
         } catch (FIPAException fe) {
             System.out.println(fe.getMessage());
         }
         for(int i =0;i<playerAgents.size();i++){
-            datos[i][0] = "0";
-            datos[i][1] = Integer.toString(this.endowment);
-            datos[i][2] = "0";
+            datos[i][0] = this.endowment;
+            datos[i][1] = 0;
+            ganadores[i] = 0;
         }
         ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
         int contador =0;
@@ -153,6 +208,7 @@ public class MainAgent extends Agent {
         private MainAgent agent;
         private int xogarcontodos=0;
 
+
         public int getXogarConTodos(){
             return this.xogarcontodos;
         }
@@ -161,7 +217,7 @@ public class MainAgent extends Agent {
             this.xogarcontodos = x;
         }
 
-        
+
         public GameManager(MainAgent agent){
             this.agent = agent;
         }
@@ -171,16 +227,6 @@ public class MainAgent extends Agent {
         }
 
         public void playround(){
-            
-            while(!this.agent.canplay){
-                System.out.print(this.agent.canplay);
-                try{
-                    Thread.sleep(1000);
-                    System.out.println("ESPERANDO");
-                }catch(Exception e){
-                    System.out.println("FALLO NO PLAYROUND DO MAIN");
-                }
-            }
             
             ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
             for(int k=0;k<playerAgents.size();k++){
@@ -192,16 +238,84 @@ public class MainAgent extends Agent {
             send(msg);
         }
 
-        public void salvaronse(){System.out.println("Salvaronse");}
-        public void morreron(){System.out.println("Morreron");}
+        public void salvaronse(){
+            //Ganou o que teña mais cartos
+            for(int i =0;i<playerAgents.size();i++){
+                datos[i][1] += datos[i][0];
+            }
+            System.out.println("ESTE XOGADOR LEVA ACUMULADOS"+ String.valueOf(datos[0][1]));         
+        
+        }
+
+        public void morreron(){System.out.println("DESASTRE!!!PERDERON TODOS");}
+
+        public void  newGeneration(int ganador){
+
+            ganadores[ganador] += 1;
+
+            for(int i =0;i<playerAgents.size();i++){    
+                datos[i][1] = 0;
+                System.out.println("GANADOOOOOR"+ ganadores[i]);
+            }
+
+            int[] copiaganadores  = ganadores.clone();
+            
+            Arrays.sort(copiaganadores);
+            
+            int index1 = Arrays.stream(ganadores).boxed().collect(Collectors.toList()).indexOf(copiaganadores[ (playerAgents.size()-1) ]);
+            int index2 = Arrays.stream(ganadores).boxed().collect(Collectors.toList()).indexOf(copiaganadores[ (playerAgents.size()-2) ]);
+            int index3 = Arrays.stream(ganadores).boxed().collect(Collectors.toList()).indexOf(copiaganadores[ (playerAgents.size()-3) ]);
+            
+            if(index1 == index2){ //Buscamos o siguiente
+                int valorpelea = ganadores[index1];
+                for(int i = index1;i<playerAgents.size();i++){
+                    if(ganadores[i]==valorpelea)index2=i;
+                }
+            }
+            if(index1 == index3){ //Buscamos o siguiente
+                int valorpelea = ganadores[index1];
+                for(int i = index1;i<playerAgents.size();i++){
+                    if(ganadores[i]==valorpelea)index3=i;
+                }
+            }
+            if(index2 == index3){ //Buscamos o siguiente
+                int valorpelea = ganadores[index2];
+                for(int i = index2;i<playerAgents.size();i++){
+                    if(ganadores[i]==valorpelea)index3=i;
+                }
+            }
+
+
+
+            this.agent.gui.setRanking("Player 1:"+playerAgents.get(index1).getLocalName()+"<br>Player 2:"+playerAgents.get(index2).getLocalName()+
+                "<br>Player 3:"+playerAgents.get(index3).getLocalName());
+            
+
+            if (this.agent.getCurrentGeneration() != this.agent.getngenerations()){
+                this.agent.gui.setTotalPartidas(this.agent.getCurrentGeneration());
+                this.agent.setCurrentGeneration(this.agent.getCurrentGeneration()+1);
+                this.agent.gui.refreshJLabel();
+                this.agent.startGame();
+            }
+
+        }
+
+        public int calcularganador(){
+            int maior = 0;
+            int index = 0;
+            for(int i =0;i<playerAgents.size();i++){
+                if(datos[i][1]>maior){
+                    maior = datos[i][1];
+                    index = i;
+                }
+            }
+            return index;
+        }
 
         public void refreshpuntuation(){
-
-            int ptotal =0;
-            for(int i =0; i< this.agent.getPlayerAgents().size();i++){
-                ptotal +=  Integer.parseInt(datos[i][0]);
-            }
-            if( (ptotal > this.agent.endowment*this.agent.getPlayerAgents().size()/2) || (int) (Math.random()*100)  >80  ){
+            
+            int random =(int) (Math.random()*100);
+            if( (this.agent.getPuntosEsteJuego() >=  this.agent.endowment*this.agent.getPlayerAgents().size()/2) || random  >80  ){
                 this.salvaronse();
             }else{
                 this.morreron();
@@ -211,52 +325,63 @@ public class MainAgent extends Agent {
 
         @Override
         public void action() {
-
+            System.out.println("A INTERFAZ APARECE COA CONSOLA MAXIMIZADA POR DEFECTO");
             while(true){
                 ACLMessage msg = myAgent.receive();
                 if(msg!=null){
                     if(msg.getOntology().equals("Verbose")){
                         this.getAgent().getGui().print(true,msg.getContent());
                     }else{
-
-                    
                         switch(msg.getContent().substring(0,6).toLowerCase()){
                             case "action":
                                 this.setXogarConTodos(this.getXogarConTodos()+1);
-                                
+                                //Para pintar na tablita
                                 this.getAgent().getGui().agentResponse(msg.getContent().substring(7),msg.getSender().getLocalName(),
                                     this.agent.getCurrentRound());
-
-                                int indexplayer= this.agent.getPlayerAgents().indexOf(msg.getSender());
-
-                                datos[indexplayer][0] = msg.getContent().substring(7);
+                                //Gardamos todo
+                                datos[this.agent.getPlayerAgents().indexOf(msg.getSender())][0] -= Integer.parseInt(msg.getContent().substring(7));
+                                this.agent.setPuntosEsteJuego(this.agent.getPuntosEsteJuego()+ Integer.parseInt(msg.getContent().substring(7)));
 
                                 if(this.getXogarConTodos()==this.getAgent().getPlayerAgents().size() ){
-                                    this.setXogarConTodos(0);//cando se execute este é que xa chegou un dos de antes
+                                    //Chegaron todas as mensaxes dos players
+                                    this.setXogarConTodos(0);
                                     this.getAgent().getGui().print(true,"Nova ronda,xogadores sincronizados");
                                     //Agora vamos enviarlle as xogadas os participantes
                                     String resultado = "Results#";
                                     for(int i =0;i<playerAgents.size();i++){
-                                        resultado += datos[i][0]+",";        
-                                        msg.addReceiver(new AID(this.agent.playerAgents.get(i).getLocalName(), AID.ISLOCALNAME));
+                                        resultado += String.valueOf(datos[i][0])+","; 
+                                        if(this.agent.playerAgents.get(i).getLocalName().equals(this.agent.getLocalName()) ){
+                                        }else{
+                                            msg.addReceiver(new AID(this.agent.playerAgents.get(i).getLocalName(), AID.ISLOCALNAME));
+                                        }
                                     }
                                     msg.setLanguage("English");
                                     msg.setOntology("Finish_him");
                                     msg.setContent(resultado);
                                     send(msg);
-
+                                        
                                     if(this.agent.getCurrentRound()!=this.agent.nrounds){
+                                        //Se non e a ultima ronda xogamos unha
                                         this.agent.setCurrentRound(this.agent.getCurrentRound()+1);
                                         this.playround();
                                     }else{
-                                        for(int i =0;i<playerAgents.size();i++){
-                                            msg.addReceiver(new AID(this.agent.playerAgents.get(i).getLocalName(), AID.ISLOCALNAME));
-                                        }
+                                        //Se e a ultima ronda xogamos outra partida
                                         this.refreshpuntuation();
-                                        msg.setLanguage("English");
-                                        msg.setOntology("Finish_him");
-                                        msg.setContent("GameOver");
-                                        send(msg);
+                                        if(this.agent.getCurrentPlay()==this.agent.getnruns()){
+                                            //A ultima ronda do ultimo juego
+                                            
+                                            for(int i =0;i<playerAgents.size();i++){
+                                                System.out.println(playerAgents.get(i).getLocalName()+"---"+datos[i][1]);
+                                            }
+                                            msg.setLanguage("English");
+                                            msg.setOntology("Finish_him");
+                                            msg.setContent("GameOver");
+                                            send(msg);
+                                            this.newGeneration(this.calcularganador());
+                                        }else{
+                                            this.agent.setCurrentPlay(this.agent.getCurrentPlay()+1);
+                                            this.agent.continueGame();
+                                        }
                                     }
                                 }
                                 break;
@@ -264,14 +389,14 @@ public class MainAgent extends Agent {
                             case "startu":
                                 this.setXogarConTodos(this.getXogarConTodos()+1);
                                 if(this.getXogarConTodos()==this.agent.getPlayerAgents().size() ){
-                                    this.agent.setCanPlay(true);
                                     this.getAgent().getGui().print(true,"Syncronizacion completada");
                                     this.setXogarConTodos(0);
                                     this.playround();
                                 }
                                 break;
                             default:
-                                this.getAgent().getGui().print(false,"Agente incompatible con interfaz"+msg.getContent());
+                                int k = 0;
+                                //this.getAgent().getGui().print(false,"Agente incompatible con interfaz:::"+msg.getContent());
                         }
                     }
                 }else{
