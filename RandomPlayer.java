@@ -9,7 +9,7 @@ import jade.lang.acl.ACLMessage;
 
 import java.util.Random;
 
-public class FixedAgent extends Agent {
+public class RandomPlayer extends Agent {
 
     private AID mainAgent;
     private int myId, opponentId;
@@ -24,14 +24,13 @@ public class FixedAgent extends Agent {
         sd.setType("Player");
         sd.setName("Game");
         dfd.addServices(sd);
-        
         try {
             DFService.register(this, dfd);
         } catch (FIPAException fe) {
             fe.printStackTrace();
         }
         addBehaviour(new Play());
-        System.out.println("RandomAgent " + getAID().getName() + " is ready.");
+        System.out.println("RandomPlayer " + getAID().getName() + " is ready.");
 
     }
 
@@ -48,22 +47,13 @@ public class FixedAgent extends Agent {
     private class Play extends CyclicBehaviour {
         Random random = new Random(1000);
         AID mainAgent;
-        public RandomAgent agent;
+        public RandomPlayer agent;
         int id;
         int nplayers;
         int endowment;
         int roundavg;
         float pd;
         int numgames;
-        int fixed;
-
-        public void setFixed(int X){
-            this.fixed = X;
-        }
-
-        public int getFixed(){
-            return this.fixed;
-        }
 
         /*public Play(RandomAgent X){
             this.agent = X;
@@ -80,7 +70,6 @@ public class FixedAgent extends Agent {
                         msg.addReceiver(this.mainAgent);
                         switch(mensaxe.getContent().substring(0,3).toLowerCase()){
                             case "id#":
-                                this.setFixed((int)Math.round((Math.random()*4)));
                                 String aux[] = mensaxe.getContent().split("#");
                                 this.id = Integer.parseInt(aux[1]);
                                 String auxcomas[] = aux[2].split(",");
@@ -91,27 +80,27 @@ public class FixedAgent extends Agent {
                                 this.numgames = Integer.parseInt(auxcomas[4]);
                                 break;
                             case "new":    
-                               /* this.setFixed((int)Math.round((Math.random()*4)));
-                                msg.setOntology("Verbose");
+                                /*msg.setOntology("Verbose");
                                 msg.setContent(getAID().getLocalName()+":\tEmpezamos un novo xogo");
                                 send(msg);
                                 msg.setOntology("Other thing");
                                 msg.setContent("startup received");
-                                send(msg);*/    
+                                send(msg);*/
                                 break;
                             case "act":
+                                int resultado =  (int)Math.round((Math.random()*4));
                                 msg.setOntology("HiAll");
-                                msg.setContent("Action#"+this.getFixed());
+                                msg.setContent("Action#"+resultado);
                                 send(msg);
                                 break;
                             case "res":
                                 //System.out.println("Chegaron os resultados");
                                 break;
                             case "gam":
-                                System.out.println("Rematou o xogo");
+                                //System.out.println("Rematou o xogo");
                                 break;
                             default:
-                                System.out.println("Esta chegando algo que non entendemos--->"+mensaxe.getContent());
+                                //System.out.println("Esta chegando algo que non entendemos--->"+mensaxe.getContent());
                                 break;
                         }
                     }else{

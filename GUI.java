@@ -76,9 +76,14 @@ class GUI extends JFrame implements ActionListener, Runnable
         this.ranking = X;
     }
 
+    public void setWinner(String wnr){
+        this.winner = "Winner:"+wnr;
+    }
+
     public void refreshJLabel(){
-        this.upleft.setText("<html><p>PlayersParticipating:"+this.nplayers+"</p><br><p>Last is no parameter values at the moment</p><br>"+
-            "<p>In game number:"+this.totalpartidas+"</p><br><p>"+this.ranking+"</p></html>");
+        this.upleft.setText("<html><p>PlayersParticipating:"+this.nplayers+ "</p><p>In game number:"+totalpartidas+"</p><br>"+
+                                "<p>Games/Generation:"+this.getAgent().getNgames()+"</p><br><p>Endownment:"+this.getAgent().getEndowment()+
+                                "</p><br><p>"+this.winner+"</p><br><p>"+this.ranking+"</p></html>");
     }
 
     public void setNplayers(int X){
@@ -225,7 +230,7 @@ class GUI extends JFrame implements ActionListener, Runnable
     }
 
     public void resetplayers(){
-
+        this.mainAgent.resetstats();
         for(int k=1;k< this.gameTable.getRowCount();k++){
 
             for(int i=1;i< this.gameTable.getColumnCount();i++){       
@@ -295,8 +300,9 @@ class GUI extends JFrame implements ActionListener, Runnable
             JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
         //Creamos a pantalla da esquerda
 
-        this.upleft = new JLabel("<html><p>PlayersParticipating:"+this.nplayers+"</p><br><p>"+this.winner+"</p><br>"+
-            "<p>In game number:"+totalpartidas+"</p><br><p>No stadistic players and the moment</p></html>");
+        this.upleft = new JLabel("<html><p>PlayersParticipating:"+this.nplayers+ "</p><p>In game number:"+totalpartidas+"</p><br>"+
+                                "<p>Games/Generation:"+this.getAgent().getNgames()+"</p><br><p>Endownment:"+this.getAgent().getEndowment()+
+                                "</p><br><p>"+this.winner+"</p><br><p>"+this.ranking+"</p></html>");
         this.upleft.setFont(new Font("def",2,20));
 
         this.horizontaldivision.setLeftComponent(upleft);
@@ -333,10 +339,11 @@ class GUI extends JFrame implements ActionListener, Runnable
             oDl = new MyDialog (this, "Current Players", true, config.get("players"),"Change Nº players","Cancel");
         }
         else if ("Number of games".equals (evt.getActionCommand())){
-            oDl = new MyDialog (this, "Current Games", true, config.get("games"),"Change Nº games","Cancel");
+            oDl = new MyDialog (this, "Current Games", true, config.get("games"),"Change Ngames","Cancel");
         }
         else if ("New".equals (evt.getActionCommand())){
-            this.mainAgent.startGame();
+            this.mainAgent.setCanPlay(true);
+            this.mainAgent.newFullGame();
             vStartThread ();
         }
         else if( "Stop".equals (evt.getActionCommand())){
@@ -400,7 +407,9 @@ class GUI extends JFrame implements ActionListener, Runnable
     public void run() {
         int i=0;
         while (true) {
-            upleft.setText("\nPlayersParticipating:"+this.nplayers+"\n\nThere is no parameter values at the moment\n\nGames Played:"+this.totalpartidas+"\n\nNo stadistic players and the moment");
+            upleft.setText("<html><p>PlayersParticipating:"+this.nplayers+ "</p><p>In game number:"+totalpartidas+"</p><br>"+
+                                "<p>Games/Generation:"+this.getAgent().getNgames()+"</p><br><p>Endownment:"+this.getAgent().getEndowment()+
+                                "</p><br><p>"+this.winner+"</p><br><p>"+this.ranking+"</p></html>");
         
             try {
                 i++;
@@ -510,8 +519,8 @@ class MyDialog extends JDialog implements ActionListener
     public void actionPerformed (ActionEvent evt) {
 
         if("Remove Player".equals(evt.getActionCommand())){
-            String sText = oJTF.getText();                     // Getting the present text from the TextField
-            this.config.set("players",sText);
+            String sText = oJTF.getText();
+            this.agent.getGui().getAgent().removePlayer(sText);                     // Getting the present text from the TextField
             dispose();
         }else if ("Change Nº players".equals (evt.getActionCommand())) {
             String sText = oJTF.getText();                     // Getting the present text from the TextField
@@ -524,6 +533,10 @@ class MyDialog extends JDialog implements ActionListener
             String sText = oJTF.getText();                     // Getting the present text from the TextField
             this.config.set("window_width",sText);
             dispose();
+        }else if("Change Ngames".equals(evt.getActionCommand())){
+            String sText = oJTF.getText();
+            this.agent.setNgames(Integer.parseInt(sText));
+            this.agent.getGui().refreshJLabel();
         }else if("Change Height".equals(evt.getActionCommand())){
             String sText = oJTF.getText();                     // Getting the present text from the TextField
             this.config.set("window_height",sText);
