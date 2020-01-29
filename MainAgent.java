@@ -18,6 +18,7 @@ public class MainAgent extends Agent {
     private GUI gui;
     private ArrayList<AID> playerAgents = new ArrayList<AID>();
     private ArrayList<AID> playerTot = new ArrayList<AID>();
+    private ArrayList<Integer> numberPlays = new ArrayList<Integer>();
     private ArrayList<String> playerNames = new ArrayList<String>();
     private GameParametersStruct parameters = new GameParametersStruct();
     private int currentround = 1;
@@ -29,6 +30,7 @@ public class MainAgent extends Agent {
     private int nplayers = 5;
     private int ngenerations = 50;
     private float pd = 0.8f;
+    private String fase;
     private int Ngames = 100;
     private boolean canplay = true;
     //0 vai ser os cartos que lle quedan
@@ -122,6 +124,11 @@ public class MainAgent extends Agent {
 
     public void startGame(){
 
+        if(this.fase.equals("Warm-Up")){
+            playerAgents = getWarmUpNewAgents();
+            gui.setupplayers(playerAgents);
+        }
+        
         while(this.canplay == false){
             try{
                 Thread.sleep(2000);
@@ -141,6 +148,7 @@ public class MainAgent extends Agent {
             datos[i][0] = this.endowment;
             datos[i][1] = 0;
             ganadores[i] = 0;
+            
         }
         this.gui.setWinner("No last round winner");
         this.gui.setRanking("No ranking at the moment");
@@ -163,12 +171,12 @@ public class MainAgent extends Agent {
         msg.setOntology("Play");
         msg.setContent("NewGame");
         send(msg);
-        try{
+        /*try{
             Thread.sleep(10);
         }catch(Exception e){
             System.out.println("FALLO NO PLAYROUND DO MAIN");
-        }
-        msg.setContent("Actions");
+        }*/
+        msg.setContent("Action");
         send(msg);
 
     }   
@@ -186,6 +194,7 @@ public class MainAgent extends Agent {
             }
             for (int i = 0; i < result.length; ++i) {
                 playerTot.add(result[i].getName());
+                numberPlays.add(0);
                 //playerAgents.add(result[i].getName());
             }
             datos = new int[playerTot.size()][2];
@@ -210,26 +219,72 @@ public class MainAgent extends Agent {
             send(msge);
             contador++;
         }
-        this.newFullGame();
 
         newGame();
+
+        this.newFullGame();
+        
         return 0;
     }
-
-    public ArrayList<AID> getnewAgents(){
-        ArrayList<AID> aux = new ArrayList<AID>();
-
-        for(int i=0; i<playerTot.size();i++){
-
-            aux.add(playerTot.get(i));
-            if(i==this.nplayers){
-                return aux;
+    
+    //Devolve o valor maximo do array
+    public int maximoArray(ArrayList<Integer> x){
+        int maximo = -1;
+        for(int i=0;i<x.size();i++){
+            if(x.get(i) > maximo ){
+                maximo = x.get(i);
             }
-
         }
+        return maximo;
+    }
 
-        return aux;
+    //Devolve o indice onde esta o valor maximo
+    public int indiceMaximo(ArrayList<Integer> x){
+        int maximo = -1;
+        int indice = -1;
+        for(int i=0;i<x.size();i++){
+            if(x.get(i) > maximo ){
+                maximo = x.get(i);
+                indice = i;
+            }
+        }
+        return indice;
+    }
 
+    public ArrayList<AID> getWarmUpNewAgents(){
+        ArrayList<AID> auxagents = new ArrayList<AID>();
+        ArrayList<Integer> auxiliar = new ArrayList<Integer>();
+        ArrayList<Integer> indexusados = new ArrayList<Integer>();
+        auxiliar.add(20000);//200 por poñer algo random,repetimolo 5 veces
+        auxiliar.add(20000);
+        auxiliar.add(20000);
+        auxiliar.add(20000);
+        auxiliar.add(20000);
+        indexusados.add(20000);
+        indexusados.add(20000);
+        indexusados.add(20000);
+        indexusados.add(20000);
+        indexusados.add(20000);
+        for(int i=0; i<playerTot.size();i++){
+            //Se este xogador xogou menos que o que mais xogou do array,metemolo
+            if( numberPlays.get(i) < maximoArray(auxiliar)){ //Para coller os que menos xogaron
+                int maxind = indiceMaximo(auxiliar); //O que mais xogou do array
+                auxiliar.set(maxind,numberPlays.get(i)); //Escribimos o numero de partidas que xogou
+                indexusados.set(maxind,i);//Gardamos o indice do xogador
+            }
+        }
+        //Agora temos os indices dos xogadores,auxiliar solo o necesitabamos para saber quenes eran os 
+        //que menos xogaran
+        System.out.println(indexusados);
+        playerAgents.clear();
+        for(int i=0;i<indexusados.size();i++){
+            auxagents.add( playerTot.get(indexusados.get(i)) );//Engadimos os xogadores que nos interesan
+            
+            numberPlays.set(indexusados.get(i),numberPlays.get(indexusados.get(i))+1);
+        }
+        System.out.println(auxagents);
+        //Agora temos 
+        return auxagents;
     }
 
     public void removePlayer(String nombre){
@@ -244,11 +299,15 @@ public class MainAgent extends Agent {
 
     public void newFullGame(){
 
-        playerAgents = getnewAgents();
-            
+        this.fase="Warm-Up";
+        this.gui.setFase(this.fase);
+        this.gui.setPlayersRemaining(playerTot.size());
+        this.ngenerations = 10;
+        //ESTO E SOLO PARA TESTEAR
+
         this.gui.setTotalPartidas(1);
         this.setCurrentGeneration(1);
-        gui.setupplayers(playerAgents);
+        
         this.startGame();
     }
 
@@ -310,52 +369,87 @@ public class MainAgent extends Agent {
 
         public void  newGeneration(int ganador){
 
-            ganadores[ganador] += 1;
+            if(!this.agent.fase.equals("Warm-Up")){
+                //Non nos interesa o dos ganadores nin nada desto se estamos no WarmUp
+                ganadores[ganador] += 1;
+                this.getAgent().getGui().print(true,"\nNova partida, esta ganou" + this.agent.playerAgents.get(ganador).getLocalName());
+                this.agent.gui.setWinner(this.agent.playerAgents.get(ganador).getLocalName()  );
 
-            
-
-            this.getAgent().getGui().print(true,"\nNova partida, esta ganou" + this.agent.playerAgents.get(ganador).getLocalName());
-            this.agent.gui.setWinner(this.agent.playerAgents.get(ganador).getLocalName()  );
-
-            for(int i =0;i<playerAgents.size();i++){    
-                datos[i][1] = 0;
-            }
-
-            int[] copiaganadores  = ganadores.clone();
-            
-            Arrays.sort(copiaganadores);
-            
-            int index1 = Arrays.stream(ganadores).boxed().collect(Collectors.toList()).indexOf(copiaganadores[ (playerAgents.size()-1) ]);
-            int index2 = Arrays.stream(ganadores).boxed().collect(Collectors.toList()).indexOf(copiaganadores[ (playerAgents.size()-2) ]);
-            int index3 = Arrays.stream(ganadores).boxed().collect(Collectors.toList()).indexOf(copiaganadores[ (playerAgents.size()-3) ]);
-            
-            if(index1 == index2){ //Buscamos o siguiente
-                int valorpelea = ganadores[index1];
-                for(int i = index1;i<playerAgents.size();i++){
-                    if(ganadores[i]==valorpelea)index2=i;
+                for(int i =0;i<playerAgents.size();i++){    
+                    datos[i][1] = 0;
                 }
-            }
-            if(index1 == index3){ //Buscamos o siguiente
-                int valorpelea = ganadores[index1];
-                for(int i = index1;i<playerAgents.size();i++){
-                    if(ganadores[i]==valorpelea)index3=i;
+
+                int[] copiaganadores  = ganadores.clone();
+                
+                Arrays.sort(copiaganadores);
+                
+                int index1 = Arrays.stream(ganadores).boxed().collect(Collectors.toList()).indexOf(copiaganadores[ (playerAgents.size()-1) ]);
+                int index2 = Arrays.stream(ganadores).boxed().collect(Collectors.toList()).indexOf(copiaganadores[ (playerAgents.size()-2) ]);
+                int index3 = Arrays.stream(ganadores).boxed().collect(Collectors.toList()).indexOf(copiaganadores[ (playerAgents.size()-3) ]);
+                
+                if(index1 == index2){ //Buscamos o siguiente
+                    int valorpelea = ganadores[index1];
+                    for(int i = index1;i<playerAgents.size();i++){
+                        if(ganadores[i]==valorpelea)index2=i;
+                    }
                 }
-            }
-            if(index2 == index3){ //Buscamos o siguiente
-                int valorpelea = ganadores[index2];
-                for(int i = index2;i<playerAgents.size();i++){
-                    if(ganadores[i]==valorpelea)index3=i;
+                if(index1 == index3){ //Buscamos o siguiente
+                    int valorpelea = ganadores[index1];
+                    for(int i = index1;i<playerAgents.size();i++){
+                        if(ganadores[i]==valorpelea)index3=i;
+                    }
                 }
+                if(index2 == index3){ //Buscamos o siguiente
+                    int valorpelea = ganadores[index2];
+                    for(int i = index2;i<playerAgents.size();i++){
+                        if(ganadores[i]==valorpelea)index3=i;
+                    }
+                }
+
+                this.agent.gui.setRanking("<p style='text-align: center;''><span style='color: #000080;'>Ranking</span></p><br>Player 1:"+playerAgents.get(index1).getLocalName()+"<br>Player 2:"+playerAgents.get(index2).getLocalName()+
+                    "<br>Player 3:"+playerAgents.get(index3).getLocalName());
             }
 
-            this.agent.gui.setRanking("<p style='text-align: center;''><span style='color: #000080;'>Ranking</span></p><br>Player 1:"+playerAgents.get(index1).getLocalName()+"<br>Player 2:"+playerAgents.get(index2).getLocalName()+
-                "<br>Player 3:"+playerAgents.get(index3).getLocalName());
-            
             if (this.agent.getCurrentGeneration() != this.agent.getngenerations()){
-                this.agent.gui.setTotalPartidas(this.agent.getCurrentGeneration());
+                //SE NON ACABAMOS A XERACION SEGUIMOS
                 this.agent.setCurrentGeneration(this.agent.getCurrentGeneration()+1);
                 this.agent.gui.refreshJLabel();
                 this.agent.startGame();
+            }else if(this.agent.fase.equals("Warm-Up")){
+                //SE ESTABAMOS NO WARM-UP TOCANOS IR O BATTLE ROYALE
+                System.out.println("AGORA TOCARIA O BATTLE ROYAL!!!");
+                this.agent.fase = "BattleRoyal";
+                this.agent.gui.setFase(this.agent.fase);
+                this.agent.ngenerations = 25;
+                this.agent.setCurrentGeneration(0);
+                playerAgents.clear();
+                for(int i =0;i<playerTot.size();i++){
+                    playerAgents.add((AID)playerTot.get(i).clone());
+                }
+                gui.setupplayers(playerAgents);
+                this.agent.gui.refreshJLabel();
+                this.agent.startGame();
+            }else if(this.agent.fase.equals("BattleRoyal")){
+                //Se estamos aqui e que xa abamos(minimo) a primeira ronda do battle royale
+                int cartosminimos = 123123123;
+                int indicecartosminimos = 0;
+                for(int i =0;i<playerAgents.size();i++){
+                    if(datos[i][1] < cartosminimos){
+                        cartosminimos = datos [i][1];
+                        indicecartosminimos = i;
+                        System.out.print(playerAgents.get(i).getName()+"---> "+datos[i][1]);
+                    }
+                }
+                System.out.println("Vamos a eliminar a "+playerAgents.get(indicecartosminimos).getName());
+                playerAgents.remove(indicecartosminimos);
+                if(playerAgents.size()>5){
+                    gui.setupplayers(playerAgents);
+                    this.agent.gui.refreshJLabel();
+                    this.agent.ngenerations = 25;
+                    this.agent.setCurrentGeneration(0);
+                    this.agent.startGame();
+                }
+                
             }
         }
 
@@ -434,7 +528,7 @@ public class MainAgent extends Agent {
                                         if(this.agent.getCurrentPlay()==this.agent.getNgames()){
                                             //A ultima ronda do ultimo juego
                                             for(int i =0;i<playerAgents.size();i++){
-                                                this.agent.getGui().print(false,playerAgents.get(i).getLocalName()+"----->"+datos[i][1]+ "  (puntos)");
+                                                this.agent.getGui().print(false,"["+this.agent.fase+"]" +playerAgents.get(i).getLocalName()+"----->"+datos[i][1]+ "  (puntos)");
                                             }
                                             this.newGeneration(this.calcularganador());
                                         }else{
@@ -459,7 +553,6 @@ public class MainAgent extends Agent {
                         }
                     }
                 }else{
-                    
                     block();
                 }
             }

@@ -1,3 +1,5 @@
+package agents;
+
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
@@ -8,9 +10,8 @@ import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 
 import java.util.Random;
-import java.util.Arrays;
 
-public class tftfriendlyPlayer extends Agent {
+public class RandomPlayer extends Agent {
 
     private AID mainAgent;
     private int myId, opponentId;
@@ -31,7 +32,7 @@ public class tftfriendlyPlayer extends Agent {
             fe.printStackTrace();
         }
         addBehaviour(new Play());
-        System.out.println("tftfriendlyPlayer " + getAID().getName() + " is ready.");
+        System.out.println("RandomPlayer " + getAID().getName() + " is ready.");
 
     }
 
@@ -42,22 +43,20 @@ public class tftfriendlyPlayer extends Agent {
         } catch (FIPAException e) {
             e.printStackTrace();
         }
-        System.out.println("tftfriendlyPlayer " + getAID().getName() + " terminating.");
+        System.out.println("RandomPlayer " + getAID().getName() + " terminating.");
     }
 
     private class Play extends CyclicBehaviour {
         Random random = new Random(1000);
         AID mainAgent;
-        public tftfriendlyPlayer agent;
+        public RandomPlayer agent;
         int id;
         int nplayers;
         int endowment;
         int roundavg;
         float pd;
         int numgames;
-        int nextplay = 0;
-        int resultround = 0;
-        int needed = 0;
+
         /*public Play(RandomAgent X){
             this.agent = X;
         }*/
@@ -81,14 +80,8 @@ public class tftfriendlyPlayer extends Agent {
                                 this.roundavg = Integer.parseInt(auxcomas[2]);
                                 this.pd = Float.parseFloat(auxcomas[3]);
                                 this.numgames = Integer.parseInt(auxcomas[4]);
-                                //We need to get "needed" each round;
-                                this.needed = (this.endowment * this.nplayers) / (2 * this.roundavg);
-                                System.out.println("Necesitamos conseguir por ronda "+this.needed);
                                 break;
                             case "new":    
-                            
-                                this.nextplay = (this.endowment / 2 )/this.roundavg;
-
                                 /*msg.setOntology("Verbose");
                                 msg.setContent(getAID().getLocalName()+":\tEmpezamos un novo xogo");
                                 send(msg);
@@ -97,30 +90,13 @@ public class tftfriendlyPlayer extends Agent {
                                 send(msg);*/
                                 break;
                             case "act":
+                                int resultado =  (int)Math.round((Math.random()*4));
                                 msg.setOntology("HiAll");
-                                msg.setContent("Action#"+this.nextplay);
+                                msg.setContent("Action#"+resultado);
                                 send(msg);
                                 break;
                             case "res":
-                                String aux2[] = mensaxe.getContent().split("#");
-                                String resultados[] = aux2[1].split(",");
-                                this.resultround = 0;
-                                //Resultround e a suma do que contrinuiron todos
-                                for(int i = 0; i< resultados.length;i++ ){
-                                    this.resultround = this.resultround + Integer.parseInt(resultados[i]);
-                                }
-                                int diferencia = (this.needed - this.resultround); 
-                                if( diferencia < 0) {
-                                    this.nextplay -= 1;
-                                    if(this.nextplay < 0){this.nextplay=0;}
-                                }else if( diferencia > (4-this.nextplay) ){
-                                    this.nextplay = 2;
-                                }else{
-                                    if(this.nextplay != 4){
-                                        this.nextplay ++;
-                                    }
-                                }
-                                    
+                                //System.out.println("Chegaron os resultados");
                                 break;
                             case "gam":
                                 //System.out.println("Rematou o xogo");

@@ -1,3 +1,5 @@
+package agents;
+
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
@@ -8,8 +10,9 @@ import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 
 import java.util.Random;
+import java.util.Arrays;
 
-public class FixedPlayer extends Agent {
+public class tftfriendlyPlayer extends Agent {
 
     private AID mainAgent;
     private int myId, opponentId;
@@ -24,14 +27,13 @@ public class FixedPlayer extends Agent {
         sd.setType("Player");
         sd.setName("Game");
         dfd.addServices(sd);
-        
         try {
             DFService.register(this, dfd);
         } catch (FIPAException fe) {
             fe.printStackTrace();
         }
         addBehaviour(new Play());
-        System.out.println("Fixedlayer " + getAID().getName() + " is ready.");
+        System.out.println("tftfriendlyPlayer " + getAID().getName() + " is ready.");
 
     }
 
@@ -42,29 +44,22 @@ public class FixedPlayer extends Agent {
         } catch (FIPAException e) {
             e.printStackTrace();
         }
-        System.out.println("FixedPlayer " + getAID().getName() + " terminating.");
+        System.out.println("tftfriendlyPlayer " + getAID().getName() + " terminating.");
     }
 
     private class Play extends CyclicBehaviour {
         Random random = new Random(1000);
         AID mainAgent;
-        public FixedPlayer agent;
+        public tftfriendlyPlayer agent;
         int id;
         int nplayers;
         int endowment;
         int roundavg;
         float pd;
         int numgames;
-        int fixed;
-
-        public void setFixed(int X){
-            this.fixed = X;
-        }
-
-        public int getFixed(){
-            return this.fixed;
-        }
-
+        int nextplay = 0;
+        int resultround = 0;
+        int needed = 0;
         /*public Play(RandomAgent X){
             this.agent = X;
         }*/
@@ -80,7 +75,6 @@ public class FixedPlayer extends Agent {
                         msg.addReceiver(this.mainAgent);
                         switch(mensaxe.getContent().substring(0,3).toLowerCase()){
                             case "id#":
-                                this.setFixed((int)Math.round((Math.random()*4)));
                                 String aux[] = mensaxe.getContent().split("#");
                                 this.id = Integer.parseInt(aux[1]);
                                 String auxcomas[] = aux[2].split(",");
@@ -89,23 +83,46 @@ public class FixedPlayer extends Agent {
                                 this.roundavg = Integer.parseInt(auxcomas[2]);
                                 this.pd = Float.parseFloat(auxcomas[3]);
                                 this.numgames = Integer.parseInt(auxcomas[4]);
+                                //We need to get "needed" each round;
+                                this.needed = (this.endowment * this.nplayers) / (2 * this.roundavg);
+                                System.out.println("Necesitamos conseguir por ronda "+this.needed);
                                 break;
                             case "new":    
-                               /* this.setFixed((int)Math.round((Math.random()*4)));
-                                msg.setOntology("Verbose");
+                            
+                                this.nextplay = (this.endowment / 2 )/this.roundavg;
+
+                                /*msg.setOntology("Verbose");
                                 msg.setContent(getAID().getLocalName()+":\tEmpezamos un novo xogo");
                                 send(msg);
                                 msg.setOntology("Other thing");
                                 msg.setContent("startup received");
-                                send(msg);*/    
+                                send(msg);*/
                                 break;
                             case "act":
                                 msg.setOntology("HiAll");
-                                msg.setContent("Action#"+this.getFixed());
+                                msg.setContent("Action#"+this.nextplay);
                                 send(msg);
                                 break;
                             case "res":
-                                //System.out.println("Chegaron os resultados");
+                                String aux2[] = mensaxe.getContent().split("#");
+                                String resultados[] = aux2[1].split(",");
+                                this.resultround = 0;
+                                //Resultround e a suma do que contrinuiron todos
+                                for(int i = 0; i< resultados.length;i++ ){
+                                    this.resultround = this.resultround + Integer.parseInt(resultados[i]);
+                                }
+                                int diferencia = (this.needed - this.resultround); 
+                                if( diferencia < 0) {
+                                    this.nextplay -= 1;
+                                    if(this.nextplay < 0){this.nextplay=0;}
+                                }else if( diferencia > (4-this.nextplay) ){
+                                    this.nextplay = 2;
+                                }else{
+                                    if(this.nextplay != 4){
+                                        this.nextplay ++;
+                                    }
+                                }
+                                    
                                 break;
                             case "gam":
                                 //System.out.println("Rematou o xogo");

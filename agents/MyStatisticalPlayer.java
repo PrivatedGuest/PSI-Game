@@ -1,3 +1,5 @@
+package agents;
+
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
@@ -9,13 +11,19 @@ import jade.lang.acl.ACLMessage;
 
 import java.util.Random;
 
-public class RandomPlayer extends Agent {
+public class MyStatisticalPlayer extends Agent {
 
     private AID mainAgent;
     private int myId, opponentId;
     private int N, S, R, I, P;
     private ACLMessage msg;
 
+    // * This method returns the next play {0,1,2,3,4}
+
+
+
+ 
+  
     protected void setup() {
         //Register in the yellow pages as a player
         DFAgentDescription dfd = new DFAgentDescription();
@@ -24,13 +32,14 @@ public class RandomPlayer extends Agent {
         sd.setType("Player");
         sd.setName("Game");
         dfd.addServices(sd);
+        
         try {
             DFService.register(this, dfd);
         } catch (FIPAException fe) {
             fe.printStackTrace();
         }
         addBehaviour(new Play());
-        System.out.println("RandomPlayer " + getAID().getName() + " is ready.");
+        System.out.println("StatsPlayer " + getAID().getName() + " is ready.");
 
     }
 
@@ -41,19 +50,31 @@ public class RandomPlayer extends Agent {
         } catch (FIPAException e) {
             e.printStackTrace();
         }
-        System.out.println("RandomPlayer " + getAID().getName() + " terminating.");
+        System.out.println("StatsPlayer " + getAID().getName() + " terminating.");
     }
 
     private class Play extends CyclicBehaviour {
         Random random = new Random(1000);
         AID mainAgent;
-        public RandomPlayer agent;
+        public MyStatisticalPlayer agent;
         int id;
         int nplayers;
         int endowment;
+        int endowmentusado=0;
         int roundavg;
         float pd;
         int numgames;
+
+        int bAllActions = 0;				// At the beginning we did not try all actions
+        int train =0;
+        int totaltrain = 6;
+        int iNumActions = 4; 					//we use it from 0 so we have 5 possible actions
+        int iLastAction;					// The last action that has been played by this player
+        public int resulttot = 0;
+        //We are creating this class in order to be clear with the code, but we can use the index of "iNumTimesActions" as a value
+        int [] possibleActions = new int[]{0,1,2,3,4}; //This is hardcoded cause only we knows the bets
+        int[] iNumTimesAction = new int [iNumActions];		// Number of times an action has been played
+        int[] dtotalPayoffAction = new int [iNumActions];
 
         /*public Play(RandomAgent X){
             this.agent = X;
@@ -75,32 +96,35 @@ public class RandomPlayer extends Agent {
                                 String auxcomas[] = aux[2].split(",");
                                 this.nplayers = Integer.parseInt(auxcomas[0]);
                                 this.endowment = Integer.parseInt(auxcomas[1]);
+
                                 this.roundavg = Integer.parseInt(auxcomas[2]);
                                 this.pd = Float.parseFloat(auxcomas[3]);
                                 this.numgames = Integer.parseInt(auxcomas[4]);
                                 break;
                             case "new":    
-                                /*msg.setOntology("Verbose");
-                                msg.setContent(getAID().getLocalName()+":\tEmpezamos un novo xogo");
-                                send(msg);
-                                msg.setOntology("Other thing");
-                                msg.setContent("startup received");
-                                send(msg);*/
+                                this.iLastAction = this.vGetNewActionStats();
+                                this.endowmentusado = 0;
+                                this.resulttot = 0;
                                 break;
                             case "act":
-                                int resultado =  (int)Math.round((Math.random()*4));
+                                this.endowmentusado  =  this.endowmentusado + this.iLastAction; 
                                 msg.setOntology("HiAll");
-                                msg.setContent("Action#"+resultado);
-                                send(msg);
+                                msg.setContent("Action#"+this.iLastAction);
+                                send(msg);                              
                                 break;
                             case "res":
                                 //System.out.println("Chegaron os resultados");
+                                String aux2[] = mensaxe.getContent().split("#");
+                                String resultados[] = aux2[1].split(",");
+                                for(int i = 0; i< resultados.length;i++ ){
+                                    this.resulttot = this.resulttot + Integer.parseInt(resultados[i]);
+                                }
                                 break;
                             case "gam":
-                                //System.out.println("Rematou o xogo");
+                                this.add_action( (this.endowment+this.endowmentusado));
                                 break;
                             default:
-                                //System.out.println("Esta chegando algo que non entendemos--->"+mensaxe.getContent());
+                                System.out.println("Esta chegando algo que non entendemos--->"+mensaxe.getContent());
                                 break;
                         }
                     }else{
@@ -170,5 +194,49 @@ public class RandomPlayer extends Agent {
             }
             return false;
         }
+
+        public void add_action(int puntos){
+            int resultado =  (int)Math.round((Math.random()*100));
+            if( (this.resulttot > (this.endowment+this.nplayers)/2) || (resultado>80) ){
+                this.dtotalPayoffAction[iLastAction]  = this.dtotalPayoffAction[iLastAction] + puntos;
+            }
+        }
+
+        public int vGetNewActionStats () {
+            int maximo = 0;
+            // Checking that I have played all actions before
+            if(train != totaltrain){
+                if (bAllActions != 4) {
+                    bAllActions ++;
+                    for (int i=0; i<iNumActions; i++){
+                        
+                        if (iNumTimesAction[i] == train) {
+                            iNumTimesAction[i]++;
+                            return possibleActions[i];
+                        }
+                    }
+
+                }else{
+                    bAllActions = 0;
+                    train ++;
+                    iNumTimesAction[0]++;
+                    return possibleActions[0];
+                }
+            }else {
+                // If all actions have been tested, the probabilities are adjusted
+                maximo = 0;
+                int indexmaximo = 0;
+                for (int i=0; i<iNumActions; i++) {		
+                    if(Math.round( dtotalPayoffAction[i]/iNumTimesAction[i]) > maximo   ){
+                        maximo = Math.round( dtotalPayoffAction[i]/iNumTimesAction[i]);
+                        indexmaximo = i;
+                    }					                    
+                }
+                this.iLastAction = possibleActions[indexmaximo]; 
+                return possibleActions[indexmaximo];
+            }
+            return 3;
+        }
+
     }
 }

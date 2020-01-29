@@ -1,11 +1,9 @@
 import java.awt.*;
-import jade.core.AID;
 import java.awt.event.*;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
- 
+
 import javax.security.auth.Refreshable;
 import javax.swing.*;
 
@@ -54,103 +52,36 @@ class GUI extends JFrame implements ActionListener, Runnable
     private int alto;
     private int ancho;
     private int totalpartidas = 0;
-    private String winner = "No last round winner";
-    private JLabel upleft;
+    private JTextArea upleft;
     private int nplayers;
-    private String fase;
-    private int playersRemaining;
     private int ngames;
-    private String ranking = "No ranking at the moment";
     private GuiOutputStream cli;
-    private boolean verbose=true;
-    public Object [][] tableUI;
-    private ArrayList<AID> playerAgents;
-    public JSplitPane horizontaldivision;   
-    public JSplitPane verticaldivision;
-    public int espera;
-    public JTable gameTable;
+    private boolean verbose;
+
     /**
      * This is the GUI constructor.
      *
      */
-
-    public void setRanking(String X){
-        this.ranking = X;
-    }
-
-    public void setWinner(String wnr){
-        this.winner = "Winner:"+wnr;
-    }
-
-    public void refreshJLabel(){
-        this.upleft.setText("<html><p>Fase:"+this.fase+ "</p><p>Players Remaining:"+this.playersRemaining+"</p><br>"+
-                                "<p>Games/Generation:"+this.getAgent().getNgames()+"</p><br><p>Endownment:"+this.getAgent().getEndowment()+
-                                "</p><br><p>"+this.ranking+"</p></html>");
-    }
-
-    public void setNplayers(int X){
-        this.nplayers=X;
-    }
-
-    public void setFase(String p){
-        this.fase = p;
-    }
-
-    public void setPlayersRemaining(int p){
-        this.playersRemaining = p;
-    }
-
-    public void setTotalPartidas(int X){
-        this.totalpartidas = X;
-    }
-
-    public int getTotalPartidas(){
-        return this.totalpartidas;
-    }
-
-    public MainAgent getAgent(){
-        return this.mainAgent;
-    }
-
-    public configuracion getConfig(){
-        return this.config;
-    }
-
     
     GUI(MainAgent agent) {
-        super ("GUI"); // Calling the constructor from the parent class
-        this.espera=0;
-        mainAgent = agent;
-        this.horizontaldivision  = new JSplitPane();
-        this.horizontaldivision.setOrientation(JSplitPane.HORIZONTAL_SPLIT);
-        this.horizontaldivision.setDividerSize(10);  
-        this.horizontaldivision.setDividerLocation( ancho/3 );
-
-        this.verticaldivision = new JSplitPane(JSplitPane.VERTICAL_SPLIT); 
-        this.verticaldivision.setDividerSize(10);
-        this.verticaldivision.setOneTouchExpandable(true);
-        this.verticaldivision.setDividerLocation( alto/2);
-
-
+        super (" GUI"); // Calling the constructor from the parent class
 
         System.out.println("Inicializada a UI");
-        setTitle("GUI");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        pack();
-        setVisible(true);
+        initUI();
+        mainAgent = agent;
+
         config= new configuracion();
 
         this.alto = Integer.parseInt(config.get("window_height"));
         this.ancho = Integer.parseInt(config.get("window_width"));
         this.verbose = Boolean.parseBoolean(config.get("verbose"));
 
-        
-
         setBackground (Color.blue);
         setForeground (Color.red);
 
         MenuBar oMB = new MenuBar();                             // The menu bar
         MenuItem oMI;                                       // Including the MenuItem in this menu
+
 
         Menu oMenu = new Menu("Edit");                           // A Menu in the menu bar
         oMI = new MenuItem ("Reset players", new MenuShortcut('R'));     // Shortcuts are hot keys for executing actions
@@ -215,6 +146,8 @@ class GUI extends JFrame implements ActionListener, Runnable
         
         oMB.add (oMenu);                                         // Including this menu in the MenuBar
 
+        
+        
         oMenu = new Menu("Help");
         oMI = new MenuItem ("About");
         oMI.addActionListener (new ActionListener(){
@@ -235,147 +168,116 @@ class GUI extends JFrame implements ActionListener, Runnable
         this.ngames = Integer.parseInt(config.get("games"));
         this.nplayers = Integer.parseInt(config.get("players"));
         //Creamos e inicializamos as tres posicións da pantalla principal
-        this.espera = 1;
+        JSplitPane verticaldivision = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        verticaldivision.setDividerSize(10);
+        verticaldivision.setOneTouchExpandable(true);
+        verticaldivision.setDividerLocation( alto/2);
+        JSplitPane horizontaldivision = new JSplitPane();
+        horizontaldivision.setOrientation(JSplitPane.HORIZONTAL_SPLIT);
+        horizontaldivision.setDividerSize(10);  
+        horizontaldivision.setDividerLocation( ancho/3 );
 
-    }
+        
+        
 
-    public void resetplayers(){
-        this.mainAgent.resetstats();
-        for(int k=1;k< this.gameTable.getRowCount();k++){
-            for(int i=1;i< this.gameTable.getColumnCount();i++){       
-                this.gameTable.setValueAt(" ",k,i);
-            }
-        }
-    
-    }
+        //Creamos a tabla do xogo
 
-    public void agentResponse(String resultado,String name,int nround){
-    
-        for(int i=1;i<playerAgents.size()+1;i++){//Na primeira columna nn hai axente
-            
-            if(this.tableUI[0][i].equals(name)){
-                this.gameTable.setValueAt(resultado,nround,i);
-            }
-        }
-    }
-
-    public void setupplayers(ArrayList<AID> playerAgents){
-
-        this.setNplayers(playerAgents.size());
-        this.playerAgents = playerAgents;
+        JPanel oJPanel = new JPanel();
+        //GridLayout Pprincipal = new GridLayout(2,1); 
+        GridLayout Pmatrix = new GridLayout(ngames+1,nplayers+1);
+        //oJPanel.add(new Label("ola",Label.CENTER));
+        //setLayout(Pmatrix);
+        
         int k = 0;
-        try{
-            Thread.sleep(1000);
-        }catch(Exception e){    
-            System.out.println(e);
-        }
         Label toappend = new Label ("Rondas ", Label.CENTER);
         toappend.setFont(new Font("ola",11,28));
         add(toappend);
-
+        //add(new Label ("Rondas ", Label.CENTER).setFont(new Font("ola","ww",18)) ) ;
         for(k=0;k<nplayers;k++){
             toappend = new Label ("Xogador "+k, Label.CENTER);
             toappend.setFont(new Font("ola",11,28));
             add(toappend );
         }
         int i = 0;
-        String[] tableUIhead = new String[playerAgents.size()+1];
-        this.tableUI= new String[ngames][playerAgents.size()+1];
-
+        String[] tojtablehead = new String[nplayers+1];
+        Object [][] tojtable= new String[ngames][nplayers+1];
         k=0;
-        for(k=0;k<playerAgents.size()+1;k++){
+        for(k=0;k<nplayers+1;k++){
             if(k==0){
-                tableUI[0][k] = "RONDAS";
-                tableUIhead[k] = "RONDAS";
-            }else{
-                tableUI[0][k] = playerAgents.get(k-1).getLocalName();
-                tableUIhead[k] = playerAgents.get(k-1).getLocalName();
+                tojtable[0][k] = "RONDAS";
+                tojtablehead[k] = "RONDAS";
             }
+            tojtable[0][k] = "XOGADOR "+k;
+            tojtablehead[k] = "XOGADOR "+k;
+            //add(new Label (""+i, Label.CENTER));
         }
-
         for(i=1;i<ngames;i++){
             k=0;
-            tableUI[i][k] = "Ronda " + i;
-            for(k=1;k<playerAgents.size()+1;k++){
-                tableUI[i][k] = " ";
+            //toappend =new Label ("Ronda "+i, Label.CENTER);
+            //toappend.setFont(new Font("ola",11,28));
+            //add(toappend);
+            tojtable[i][k] = "Ronda " + i;
+            for(k=1;k<nplayers+1;k++){
+                tojtable[i][k] = "XXX";
+                //add(new Label (""+i, Label.CENTER));
             }
         }
+        JTable GameTable = new JTable(tojtable,tojtablehead);
+        
 
-        this.gameTable = new JTable(tableUI,tableUIhead);
-        this.gameTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);   
-        this.gameTable.setRowHeight(ancho*2/3/(ngames+1));
+        GameTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);   
+        GameTable.setRowHeight(ancho*2/3/(ngames+1));
 
-        JScrollPane scrollgame = new JScrollPane (this.gameTable,
-            JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+
         //Creamos a pantalla da esquerda
 
-        this.upleft = new JLabel("<html><p>Fase:"+this.fase+ "</p><p>Players Remaining:"+this.playersRemaining+"</p><br>"+
-                                "<p>Games/Generation:"+this.getAgent().getNgames()+"</p><br><p>Endownment:"+this.getAgent().getEndowment()+
-                                "</p><br><p>"+this.ranking+"</p></html>");
+        this.upleft = new JTextArea("\nPlayersParticipating:"+nplayers+"\n\nThere is no parameter values at the moment\n\nGames Played:"+totalpartidas+"\n\nNo stadistic players and the moment");
         this.upleft.setFont(new Font("def",2,20));
 
-        this.horizontaldivision.setLeftComponent(upleft);
-        this.horizontaldivision.setRightComponent(scrollgame);
-
-
-        this.verticaldivision.setTopComponent(this.horizontaldivision);
-
+        horizontaldivision.setLeftComponent(upleft);
+        horizontaldivision.setRightComponent(GameTable);
+        verticaldivision.setTopComponent(horizontaldivision);
         JTextArea cliprueba = new JTextArea();
         cli = new GuiOutputStream(cliprueba);
-        this.verticaldivision.setBottomComponent(new JScrollPane(cliprueba));
+        verticaldivision.setBottomComponent(new JScrollPane(cliprueba));
         System.setOut(new PrintStream(cli,true));
-        getContentPane().add(this.verticaldivision, java.awt.BorderLayout.CENTER);
+        getContentPane().add(verticaldivision, java.awt.BorderLayout.CENTER);
         setSize (new Dimension(alto,ancho));     // Window size
         setLocation (new Point (locatex, locatey));   // Window position in the screen
         setVisible (true);                    // Let's make the GUI appear in the screen
-
-        return ;
     }
-
-    /*
+    /**
      * This method recibes and process events related with this class.
      *
      * @param evt In this parameter we receive the event that has been generated.
      */
-
-
     public void actionPerformed (ActionEvent evt) {
-
-        if("Remove player".equals (evt.getActionCommand())){
-            oDl = new MyDialog (this,"Currentasdasd", true, config.get("players"),"Remove Player","Cancel");
-        }
         if ("Change Nº Players".equals (evt.getActionCommand())){
-            oDl = new MyDialog (this, "Current Players", true, config.get("players"),"Change Nº players","Cancel");
+            oDl = new MyDialog (this.config,this, "Current Players", true, config.get("players"),"Change Nº players","Cancel");
         }
         else if ("Number of games".equals (evt.getActionCommand())){
-            oDl = new MyDialog (this, "Current Games", true, config.get("games"),"Change Ngames","Cancel");
+            oDl = new MyDialog (this.config,this, "Current Games", true, config.get("games"),"Change Nº games","Cancel");
         }
-        else if ("New".equals (evt.getActionCommand())){
-            this.mainAgent.setCanPlay(true);
-            this.mainAgent.newFullGame();
+        else if ("New".equals (evt.getActionCommand()))
             vStartThread ();
-        }
+
         else if( "Stop".equals (evt.getActionCommand())){
-            this.mainAgent.setCanPlay(false);
             vStopThread ();
         }
         else if( "Continue".equals (evt.getActionCommand())){
-            this.mainAgent.setCanPlay(true);
             vContinueThread ();
         }else if ("Verbose".equals(evt.getActionCommand())){
-            oDl= new MyDialog (this, "Verbose", true, "Activade/Desactivate","Activate Verbose","Desactivate Verbose");
+            oDl= new MyDialog (this.config,this, "Verbose", true, "Activade/Desactivate","Activate Verbose","Desactivate Verbose");
         }else if ("Width".equals(evt.getActionCommand())){
-            oDl = new MyDialog (this, "Current Width", true, config.get("window_width"),"Change Width","Cancel");
+            oDl = new MyDialog (this.config,this, "Current Width", true, config.get("window_width"),"Change Width","Cancel");
         }else if ("Height".equals(evt.getActionCommand())){
-            oDl = new MyDialog (this, "Current Height", true, config.get("window_height"),"Change Height","Cancel");
-        }else if ("Reset players".equals(evt.getActionCommand())){
-            this.resetplayers();
-                
+            oDl = new MyDialog (this.config,this, "Current Height", true, config.get("window_height"),"Change Height","Cancel");
         }
+        
         else if ("Exit".equals (evt.getActionCommand())) {
             bProcessExit = true;
-            System.exit(0);
             dispose();        
+            System.exit(0);
         }
     }
 
@@ -383,14 +285,13 @@ class GUI extends JFrame implements ActionListener, Runnable
      * This method starts a thread
      */
     private void vStartThread () {
-        /*
         bProcessReboot = true;
         bProcessWait = false;
         if (oProcess == null) {
             oProcess = new Thread (this);
             oProcess.start();
             bProcessExit = false;
-        }*/
+        }
     }
 
     /**
@@ -416,9 +317,7 @@ class GUI extends JFrame implements ActionListener, Runnable
     public void run() {
         int i=0;
         while (true) {
-            upleft.setText("<html><p>Fase:"+this.fase+ "</p><p>Players Remaining"+this.playersRemaining+"</p><br>"+
-                                "<p>Games/Generation:"+this.getAgent().getNgames()+"</p><br><p>Endownment:"+this.getAgent().getEndowment()+
-                                "</p><br><p>"+this.ranking+"</p></html>");
+            upleft.setText("\nPlayersParticipating:"+this.nplayers+"\n\nThere is no parameter values at the moment\n\nGames Played:"+this.totalpartidas+"\n\nNo stadistic players and the moment");
         
             try {
                 i++;
@@ -438,6 +337,7 @@ class GUI extends JFrame implements ActionListener, Runnable
                         System.out.println("Sistema Pausado");
                     }
                     
+                    Thread.sleep(2000);
                     if(i== ngames && bProcessReboot == false){
                         System.out.println("Necesita iniciar una nueva partida");
                         bProcessWait = true;
@@ -454,13 +354,20 @@ class GUI extends JFrame implements ActionListener, Runnable
         GUI oGUI= new GUI();
     }*/
 
-    public void print(boolean esverbose,String parapintar ){
-        if(!esverbose || this.getConfig().get("verbose").equals("true")  )  {
-            System.out.println(parapintar);
-        }
+
+        public void initUI() {
+        setTitle("GUI");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        pack();
+        setVisible(true);
+        
     }
 
-     public void setPlayersUI(ArrayList<String> players) {
+    public void print(String parapintar){
+        System.out.println(parapintar);
+    }
+
+     public void setPlayersUI(String[] players) {
       System.out.print(players);  
      }
 }
@@ -481,7 +388,6 @@ class MyDialog extends JDialog implements ActionListener
     private int locatex = 650;
     private int locatey = 250;
     configuracion config;
-    MainAgent agent;
 
     /**
      * This is the MyDialog class constructor
@@ -490,11 +396,10 @@ class MyDialog extends JDialog implements ActionListener
      * @param sDialogName Name of this dialog window
      * @param bBool Indicates if this is a modal window (true) or not.
      */
-    MyDialog (GUI gui, String sDialogName, boolean bBool, String TextField, String ButtonField,String SecondButtonField) {
-        super (gui, sDialogName, bBool);
-        this.config = gui.getConfig();
-        this.agent = gui.getAgent();
-        
+    MyDialog (configuracion config,Frame oParent, String sDialogName, boolean bBool, String TextField, String ButtonField,String SecondButtonField) {
+        super (oParent, sDialogName, bBool);
+
+        this.config =config;
         setBackground (Color.red); // Colors
         setForeground (Color.blue);
 
@@ -526,46 +431,31 @@ class MyDialog extends JDialog implements ActionListener
      * @param evt In this parameter we receive the event that has been generated.
      */
     public void actionPerformed (ActionEvent evt) {
-
-        if("Remove Player".equals(evt.getActionCommand())){
-            String sText = oJTF.getText();
-            this.agent.getGui().getAgent().removePlayer(sText);                     // Getting the present text from the TextField
-            dispose();
-        }else if ("Change Nº players".equals (evt.getActionCommand())) {
+        if ("Change Nº players".equals (evt.getActionCommand())) {
             String sText = oJTF.getText();                     // Getting the present text from the TextField
             this.config.set("players",sText);
             int iVal = Integer.parseInt (sText);               // Converting such text to several formats
             float fVal = Float.parseFloat (sText);
             double dVal = Double.parseDouble (sText);
             dispose();                                         // Closing the dialog window
+        }else if ("Change Nº games".equals (evt.getActionCommand())) {
+            String sText = oJTF.getText();                     // Getting the present text from the TextField
+            this.config.set("games",sText);
+
         }else if("Change Width".equals(evt.getActionCommand())){
             String sText = oJTF.getText();                     // Getting the present text from the TextField
             this.config.set("window_width",sText);
-            dispose();
-        }else if("Change Ngames".equals(evt.getActionCommand())){
-            String sText = oJTF.getText();
-            this.agent.setNgames(Integer.parseInt(sText));
-            this.agent.getGui().refreshJLabel();
         }else if("Change Height".equals(evt.getActionCommand())){
             String sText = oJTF.getText();                     // Getting the present text from the TextField
             this.config.set("window_height",sText);
-            dispose();
         }else if("Activate Verbose".equals(evt.getActionCommand())){
-            this.config.set("verbose","true");
-            this.agent.setVerbose(true);
-            dispose();   
-        }else if("Desactivate Verbose".equals(evt.getActionCommand())){
-            this.config.set("verbose","false"); 
-            this.agent.setVerbose(false);
-            dispose();  
+            this.config.set("verbose","true");   
+        }else if("Deactivate Verbose".equals(evt.getActionCommand())){
+            this.config.set("verbose","false");   
         }
-        else if ("Cancel".equals (evt.getActionCommand())){
+        else if ("Cancel".equals (evt.getActionCommand()))
             dispose();
-        }else{
-            System.out.print("ESTA FUNCIONANDO MAL ESO");
-        }
-            
-    }   
+    }
 
 
 } // from MyDialog class
