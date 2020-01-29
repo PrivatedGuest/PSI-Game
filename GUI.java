@@ -84,7 +84,7 @@ class GUI extends JFrame implements ActionListener, Runnable
 
     public void refreshJLabel(){
         this.upleft.setText("<html><p>Fase:"+this.fase+ "</p><p>Players Remaining:"+this.playersRemaining+"</p><br>"+
-                                "<p>Games/Generation:"+this.getAgent().getNgames()+"</p><br><p>Endownment:"+this.getAgent().getEndowment()+
+                                "<p>Games/Generation:"+this.getAgent().getNgames()+"</p><br><p>Eliminated:"+this.getAgent().getPlayersDeletedString()+
                                 "</p><br><p>"+this.ranking+"</p></html>");
     }
 
@@ -310,7 +310,7 @@ class GUI extends JFrame implements ActionListener, Runnable
         //Creamos a pantalla da esquerda
 
         this.upleft = new JLabel("<html><p>Fase:"+this.fase+ "</p><p>Players Remaining:"+this.playersRemaining+"</p><br>"+
-                                "<p>Games/Generation:"+this.getAgent().getNgames()+"</p><br><p>Endownment:"+this.getAgent().getEndowment()+
+                                "<p>Games/Generation:"+this.getAgent().getNgames()+"</p><br><p>Eliminated:"+this.getAgent().getPlayersDeletedString()+
                                 "</p><br><p>"+this.ranking+"</p></html>");
         this.upleft.setFont(new Font("def",2,20));
 
@@ -417,7 +417,7 @@ class GUI extends JFrame implements ActionListener, Runnable
         int i=0;
         while (true) {
             upleft.setText("<html><p>Fase:"+this.fase+ "</p><p>Players Remaining"+this.playersRemaining+"</p><br>"+
-                                "<p>Games/Generation:"+this.getAgent().getNgames()+"</p><br><p>Endownment:"+this.getAgent().getEndowment()+
+                                "<p>Games/Generation:"+this.getAgent().getNgames()+"</p><br><p>Eliminated:"+this.getAgent().getPlayersDeletedString()+
                                 "</p><br><p>"+this.ranking+"</p></html>");
         
             try {
