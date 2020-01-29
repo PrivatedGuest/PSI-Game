@@ -291,7 +291,6 @@ public class MainAgent extends Agent {
         }
         //Agora temos os indices dos xogadores,auxiliar solo o necesitabamos para saber quenes eran os 
         //que menos xogaran
-        System.out.println(indexusados);
         playerAgents.clear();
         for(int i=0;i<indexusados.size();i++){
             auxagents.add( playerTot.get(indexusados.get(i)) );//Engadimos os xogadores que nos interesan
@@ -454,7 +453,9 @@ public class MainAgent extends Agent {
             }else if(this.agent.fase.equals("BattleRoyal")){
                 //Se estamos aqui e que xa abamos(minimo) a primeira ronda do battle royale
                 int cartosminimos = 123123123;
+                int cartosmaximos = 0;
                 int indicecartosminimos = 0;
+                int indicecartosmaximos = 0;
                 for(int i =0;i<playerAgents.size();i++){
                     if(ganadores[i] < cartosminimos){
                         cartosminimos = ganadores[i];
@@ -462,12 +463,17 @@ public class MainAgent extends Agent {
                     }
                     System.out.print(playerAgents.get(i).getName()+"---> "+ganadores[i]+"\n");
                 }
+                //EEEEEEEEEEEEEEEEEEEEEE
+                //EEEEEEEEEEEEEEEEEEEEEE
+                //EEEEEEEEEEEEEEEEEEEEEE
+                //EEEEEEEEEEEEEEEEEEEEEE
+                //Temos que facer un novo playeragents para modificar o noso antollo
                 System.out.println("Vamos a eliminar a "+playerAgents.get(indicecartosminimos).getName());
                 try{Thread.sleep(3000);}catch(Exception e){}
                 playerAgents.remove(indicecartosminimos);
                 jugadoresEliminados.add(indicecartosminimos);
-                this.agent.gui.setPlayersRemaining(playerAgents.size());
-                if(playerAgents.size()>5){
+                this.agent.gui.setPlayersRemaining( playerAgents.size()-jugadoresEliminados.size() );
+                if( (playerAgents.size()/*-jugadoresEliminados.size()*/) >5){
                     gui.setupplayers(playerAgents);
                     this.agent.gui.refreshJLabel();
                     this.agent.ngenerations = 25;
@@ -486,7 +492,16 @@ public class MainAgent extends Agent {
                     this.agent.startGame();
                 }   
             }else{
-                System.out.println("GANAD@R DO TORNEO E..>")
+                int cartosmaximos = 0;
+                int indicecartosmaximos = 0;
+                for(int i =0;i<playerAgents.size();i++){
+                    if(ganadores[i] > cartosmaximos ){
+                        cartosmaximos = ganadores[1];
+                        indicecartosmaximos = i;
+                    }
+                }
+                    System.out.println("GANAD@R DO TORNEO E..>"+playerAgents.get(indicecartosmaximos).getName());
+            
             }
         }
 
