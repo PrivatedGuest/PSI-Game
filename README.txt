@@ -1,6 +1,9 @@
 1)Lionel Salgado Rigueira
 
-2) 
+2) COMPILAR-->javac -cp .\jade\lib\jade.jar *.java agents/*.java
+	nota:Cambiar o classpath do jade
+   EXECUTAR-->java -cp ".\jade\lib\jade.jar;.;/agents" jade.Boot -nomtp -agents "Principal:MainAgent;Random:agents.RandomPlayer;Statistical:agents.MyStatisticalPlayer;Friendly:agents.tftfriendlyPlayer;TFTRemodel:agents.tftremodelPlayer;Fixed:agents.FixedPlayer;Random2:agents.RandomPlayer;Random3:agents.RandomPlayer"
+
 
 3)  Note: We dont really know when a dissaster appear, so we will use 0.8 in our 
           agents and and it is suppost to be in accord in late game.    
@@ -20,5 +23,25 @@
 
 5) 
     5.1)Agents are concurrent each other,so its possible to see some warning (even controlated exceptions) during the execution in the CLI(not UI).
-    5.2)I got a "configuration.txt" just to have persistence in the opcions taken
+    5.2)I got a "configuration.txt" just to have persistence in the options taken
     5.3)There is a real time ranking in the UI.
+
+    CONCURRENCY--> The main send messages to all the agents(playing) and they play concurrently but they have one exception using the send() method from the jade library
+
+		java.util.ConcurrentModificationException
+        		at java.util.ArrayList$Itr.checkForComodification(ArrayList.java:909)
+        		at java.util.ArrayList$Itr.next(ArrayList.java:859)
+        		at jade.util.leap.ArrayList$1.next(ArrayList.java:162)
+        		at jade.core.AgentContainerImpl.handleSend(AgentContainerImpl.java:740)
+        		at jade.core.Agent.send(Agent.java:1928)
+        		at agents.tftfriendlyPlayer$Play.action(tftfriendlyPlayer.java:104) /*THIS IS THE SEND() INSTRUCTION*/
+        		at jade.core.behaviours.Behaviour.actionWrapper(Behaviour.java:344)
+        		at jade.core.Agent$ActiveLifeCycle.execute(Agent.java:1585)
+        		at jade.core.Agent.run(Agent.java:1524)
+        		at java.lang.Thread.run(Thread.java:748)
+
+	Conclusion-> The agents are concurrent and the program should be faster, but all that exceptions make it slower and hard to debug. In this situacions concurrency is not
+worth, even if it works well.
+
+
+

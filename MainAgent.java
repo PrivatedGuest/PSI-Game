@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.ArrayList;
+import java.lang.*;
 
 public class MainAgent extends Agent {
 
@@ -52,13 +53,15 @@ public class MainAgent extends Agent {
         this.puntosestejuego = X;
     }
 
+    //Devolve un string cos xogadores eliminados directo para imprimir en pantalla
     public String getPlayersDeletedString(){
         String devolver = " ";
         if(jugadoresEliminados.size() == 0){
             return "None";
         }else{
             for(int i=0;i<jugadoresEliminados.size();i++){
-                devolver += playerTot.get(jugadoresEliminados.get(i)).getName()+"\n";
+                String fullname = playerTot.get(jugadoresEliminados.get(i)).getName();
+                devolver += fullname.substring(0,fullname.indexOf("@"))   +"\n";
             }
         }
         return devolver;
@@ -155,7 +158,7 @@ public class MainAgent extends Agent {
         this.continueGame();
 
     }
-
+    //Elimina as estadisticas dos xogadores e da UI
     public void resetstats(){
         
         for(int i =0;i<playerTot.size();i++){
@@ -172,7 +175,7 @@ public class MainAgent extends Agent {
         
     }
 
-
+    //Chamamolo cando non e a ultima ronda do juego
     public void continueGame(){
     
         ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
@@ -187,16 +190,12 @@ public class MainAgent extends Agent {
         msg.setOntology("Play");
         msg.setContent("NewGame");
         send(msg);
-        /*try{
-            Thread.sleep(10);
-        }catch(Exception e){
-            System.out.println("FALLO NO PLAYROUND DO MAIN");
-        }*/
         msg.setContent("Action");
         send(msg);
 
     }   
 
+    //E unha inicializacion da interfaz, inicializanse cousas en back para que o front non teña unha race condition
     public int updatePlayers() {
         gui.print(false,"Updating player list");
         DFAgentDescription template = new DFAgentDescription();
@@ -267,6 +266,7 @@ public class MainAgent extends Agent {
         return indice;
     }
 
+    //Devolve cinco axentes,os que menos partidas de calentamiento xogara
     public ArrayList<AID> getWarmUpNewAgents(){
         ArrayList<AID> auxagents = new ArrayList<AID>();
         ArrayList<Integer> auxiliar = new ArrayList<Integer>();
@@ -302,8 +302,8 @@ public class MainAgent extends Agent {
         return auxagents;
     }
 
+    //Elimina un axente e refai a interfaz
     public void removePlayer(String nombre){
-        
         for(int i=0;i<playerAgents.size();i++){
             if(playerAgents.get(i).getLocalName().equals(nombre)){
                 playerAgents.remove(playerAgents.get(0));
@@ -312,6 +312,7 @@ public class MainAgent extends Agent {
         }
     }
 
+    //Start a full game
     public void newFullGame(){
         this.resetstats();
         jugadoresEliminados.clear();
@@ -321,10 +322,8 @@ public class MainAgent extends Agent {
         this.gui.setPlayersRemaining(playerTot.size());
         this.ngenerations = 10;
         //ESTO E SOLO PARA TESTEAR
-
         this.gui.setTotalPartidas(1);
         this.setCurrentGeneration(1);
-        
         this.startGame();
     }
 
@@ -359,7 +358,7 @@ public class MainAgent extends Agent {
         public MainAgent getAgent(){
             return this.agent;
         }
-
+        //Send action message to order the agents to play
         public void playround(){
             
             ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
@@ -372,18 +371,19 @@ public class MainAgent extends Agent {
             send(msg);
         }
 
+        //Ganou o que teña mais cartos
         public void salvaronse(){
-            //Ganou o que teña mais cartos
             for(int i =0;i<playerAgents.size();i++){
                 datos[i][1] += datos[i][0];
             }        
         }
 
+        //Morreron,reinicianse as contas pero non fan nada mais
         public void morreron(){
             this.agent.gui.print(true,"DESASTRE!!!PERDERON TODOS");
         }
 
-
+        //Nova xeracion,empezase co warmup
         public void  newGeneration(int ganador){
 
             if(!this.agent.fase.equals("Warm-Up")){
@@ -437,11 +437,11 @@ public class MainAgent extends Agent {
                 this.agent.gui.refreshJLabel();
                 this.agent.startGame();
             }else if(this.agent.fase.equals("Warm-Up")){
-                //SE ESTABAMOS NO WARM-UP TOCANOS IR O BATTLE ROYALE
+                //SE ESTABAMOS NO WARM-UP E REMATAMOS AS XERACIONS TOCANOS IR O BATTLE ROYALE
                 System.out.println("AGORA TOCARIA O BATTLE ROYAL!!!");
                 this.agent.fase = "BattleRoyal";
                 this.agent.gui.setFase(this.agent.fase);
-                this.agent.ngenerations = 20;
+                this.agent.ngenerations = 20; //Son menores para rematar antes(moi lento)
                 this.agent.setCurrentGeneration(0);
                 playerAgents.clear();
                 for(int i =0;i<playerTot.size();i++){
@@ -451,7 +451,7 @@ public class MainAgent extends Agent {
                 this.agent.gui.refreshJLabel();
                 this.agent.startGame();
             }else if(this.agent.fase.equals("BattleRoyal")){
-                //Se estamos aqui e que xa abamos(minimo) a primeira ronda do battle royale
+                //Se estamos aqui e que xa acabamos(minimo) a primeira ronda do battle royale
                 int cartosminimos = 123123123;
                 int cartosmaximos = 0;
                 int indicecartosminimos = 0;
@@ -463,17 +463,12 @@ public class MainAgent extends Agent {
                     }
                     System.out.print(playerAgents.get(i).getName()+"---> "+ganadores[i]+"\n");
                 }
-                //EEEEEEEEEEEEEEEEEEEEEE
-                //EEEEEEEEEEEEEEEEEEEEEE
-                //EEEEEEEEEEEEEEEEEEEEEE
-                //EEEEEEEEEEEEEEEEEEEEEE
-                //Temos que facer un novo playeragents para modificar o noso antollo
                 System.out.println("Vamos a eliminar a "+playerAgents.get(indicecartosminimos).getName());
                 try{Thread.sleep(3000);}catch(Exception e){}
                 playerAgents.remove(indicecartosminimos);
                 jugadoresEliminados.add(indicecartosminimos);
-                this.agent.gui.setPlayersRemaining( playerAgents.size()-jugadoresEliminados.size() );
-                if( (playerAgents.size()/*-jugadoresEliminados.size()*/) >5){
+                this.agent.gui.setPlayersRemaining( playerAgents.size() );
+                if( (playerAgents.size() ) >5){//Eliminamos ata que queden 5 xogadores
                     gui.setupplayers(playerAgents);
                     this.agent.gui.refreshJLabel();
                     this.agent.ngenerations = 25;
@@ -484,7 +479,7 @@ public class MainAgent extends Agent {
                     this.agent.resetstats();
                     this.agent.fase = "FINAL";
                     this.agent.gui.setFase(this.agent.fase);
-                    this.agent.setNgames(500);
+                    this.agent.setNgames(1000);
                     this.agent.ngenerations = 1;
                     this.agent.setCurrentGeneration(1);
                     this.agent.gui.setupplayers(playerAgents);
@@ -500,8 +495,7 @@ public class MainAgent extends Agent {
                         indicecartosmaximos = i;
                     }
                 }
-                    System.out.println("GANAD@R DO TORNEO E..>"+playerAgents.get(indicecartosmaximos).getName());
-            
+                System.out.println("GANAD@R DO TORNEO E..>"+playerAgents.get(indicecartosmaximos).getName());
             }
         }
 
@@ -517,15 +511,14 @@ public class MainAgent extends Agent {
             return index;
         }
 
+        //Calculamos se chegaron ao threshold
         public void refreshpuntuation(){
-            //System.out.println("Temos "+this.agent.getPuntosEsteJuego()+"e necesitamos"+this.agent.endowment*this.agent.getPlayerAgents().size()/2);
             int random =(int) (Math.random()*100);
             if( (this.agent.getPuntosEsteJuego() >=  this.agent.endowment*this.agent.getPlayerAgents().size()/2) || random  >=80  ){
                 this.salvaronse();
             }else{
                 this.morreron();
             }
-
         }
 
         @Override
@@ -546,9 +539,10 @@ public class MainAgent extends Agent {
                                 this.getAgent().getGui().agentResponse(msg.getContent().substring(7),msg.getSender().getLocalName(),
                                     this.agent.getCurrentRound());
                                 //Gardamos todo
+                                try{
                                 datos[this.agent.getPlayerAgents().indexOf(msg.getSender())][0] = 4-Integer.parseInt(msg.getContent().substring(7));
                                 this.agent.setPuntosEsteJuego(this.agent.getPuntosEsteJuego()+ Integer.parseInt(msg.getContent().substring(7)));
-
+                                }catch(Exception e){}
                                 if(this.getXogarConTodos()==this.getAgent().getPlayerAgents().size() ){
                                     //Chegaron todas as mensaxes dos players
                                     this.setXogarConTodos(0);
